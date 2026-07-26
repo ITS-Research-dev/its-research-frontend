@@ -17,12 +17,12 @@ export default function LoginForm() {
     e.preventDefault();
 
     if (email === "teacher@gmail.com") {
-      router.push("/teacher");
+      router.push("/teacher/dashboard");
       return;
     }
 
     if (email === "student@gmail.com") {
-      router.push("/student");
+      router.push("/student/materials");
       return;
     }
 
