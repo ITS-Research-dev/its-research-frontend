@@ -1,9 +1,9 @@
-import React from 'react'
-
-function page() {
+export default function TeacherDashboard() {
   return (
-    <div>page</div>
-  )
-}
+    <div>
+      <h1 className="text-3xl font-bold">Dashboard Guru</h1>
 
-export default page
+      <p className="mt-2 text-slate-600">Selamat datang di dashboard guru.</p>
+    </div>
+  );
+}

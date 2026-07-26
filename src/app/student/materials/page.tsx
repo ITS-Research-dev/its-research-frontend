@@ -1,7 +1,9 @@
-import React from "react";
+export default function Material() {
+  return (
+    <div>
+      <h1 className="text-3xl font-bold">Dashboard Siswa</h1>
 
-function page() {
-  return <div>page</div>;
+      <p className="mt-2 text-slate-600">Selamat datang di dashboard siswa.</p>
+    </div>
+  );
 }
-
-export default page;
