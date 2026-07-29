@@ -1,7 +1,16 @@
-/**
- * Login Request
- */
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export interface LoginResponse {
+  message: string;
+  access_token: string;
+  user: User;
 }

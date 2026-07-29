@@ -1,18 +1,19 @@
 import Sidebar from "@/components/layout/Sidebar";
+import Topbar from "@/components/layout/Topbar";
 
-interface StudentLayoutProps {
+export default function StudentLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
-
-export default function StudentLayout({ children }: StudentLayoutProps) {
+}) {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-background">
       <Sidebar role="student" />
 
       <div className="flex flex-1 flex-col">
-        <main className="flex-1 overflow-y-auto bg-slate-100 p-6">
-          {children}
-        </main>
+        <Topbar name="Andi Pratama" role="student" />
+
+        <main className="flex-1 overflow-auto p-8">{children}</main>
       </div>
     </div>
   );

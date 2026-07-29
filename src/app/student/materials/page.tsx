@@ -1,9 +1,13 @@
+import PageHeader from "@/components/common/PageHeader";
+
 export default function Material() {
   return (
     <div>
-      <h1 className="text-3xl font-bold">Dashboard Siswa</h1>
-
-      <p className="mt-2 text-slate-600">Selamat datang di dashboard siswa.</p>
+      <PageHeader
+        title="Pilih Topik Materi"
+        description="Materi disusun berurutan dari dasar ke tingkat lanjut. Pelajari sesuai
+        urutan atau pilih topik yang ingin direview ulang."
+      />
     </div>
   );
 }

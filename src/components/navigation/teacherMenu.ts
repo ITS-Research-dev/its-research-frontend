@@ -9,7 +9,7 @@ import {
 export const teacherMenu = [
   {
     title: "Dashboard",
-    href: "/teacher",
+    href: "/teacher/dashboard",
     icon: LayoutDashboard,
   },
   {

@@ -8,11 +8,11 @@ import {
 } from "lucide-react";
 
 export const studentMenu = [
-  {
-    title: "Dashboard",
-    href: "/student",
-    icon: LayoutDashboard,
-  },
+  // {
+  //   title: "Dashboard",
+  //   href: "/student",
+  //   icon: LayoutDashboard,
+  // },
   {
     title: "Materi Belajar",
     href: "/student/materials",
@@ -24,12 +24,7 @@ export const studentMenu = [
     icon: FileCode,
   },
   {
-    title: "Riwayat",
-    href: "/student/history",
-    icon: History,
-  },
-  {
-    title: "Profil",
+    title: "Profil & Riwayat",
     href: "/student/profile",
     icon: User,
   },
