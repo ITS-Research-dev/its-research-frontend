@@ -83,7 +83,7 @@ export default function Sidebar({ role }: SidebarProps) {
                   ${
                     active
                       ? "bg-primary/10 text-primary font-semibold"
-                      : "text-text hover:bg-primary/10 hover:text-primary"
+                      : "text-text hover:bg-secondary/10 hover:text-text"
                   }
                 `}
               >
