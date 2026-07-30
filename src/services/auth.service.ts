@@ -1,15 +1,21 @@
-import { api } from "@/lib/api";
-import { API_ENDPOINTS } from "@/constants/api";
+import api from "@/lib/api";
 
-import type { LoginRequest, LoginResponse } from "@/types/auth";
+import { ROUTES } from "@/constants/routes";
 
-export const AuthService = {
+import { LoginRequest, LoginResponse } from "@/types/auth";
+
+class AuthService {
   async login(payload: LoginRequest): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>(
-      API_ENDPOINTS.AUTH.LOGIN,
-      payload,
-    );
+    const response = await api.post<LoginResponse>(ROUTES.LOGIN, payload);
 
     return response.data;
-  },
-};
+  }
+
+  async logout() {
+    const response = await api.post(ROUTES.LOGOUT);
+
+    return response.data;
+  }
+}
+
+export default new AuthService();

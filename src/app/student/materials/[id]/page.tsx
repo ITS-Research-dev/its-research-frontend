@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { materials } from "@/data/materials";
-
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import MaterialHeader from "@/components/material/MaterialHeader";
 import MaterialContent from "@/components/material/MaterialContent";
 import MaterialFooter from "@/components/material/MaterialFooter";
@@ -25,6 +26,24 @@ export default async function MaterialDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-8">
+      <Link
+        href="/student/materials"
+        className="
+    mb-6
+    inline-flex
+    items-center
+    gap-2
+    text-sm
+    font-medium
+    text-primary
+    transition-colors
+    hover:text-primary/80
+  "
+      >
+        <ArrowLeft size={18} />
+        Kembali ke Materi
+      </Link>
+
       <MaterialHeader
         title={material.title}
         description={material.description}
