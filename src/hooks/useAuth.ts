@@ -1,14 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-
 import AuthService from "@/services/auth.service";
 import { storage } from "@/utils/storage";
 import { useAuthStore } from "@/store/auth.store";
-
 import { ROUTES } from "@/constants/routes";
 import { ROLES } from "@/constants/roles";
-
 import { LoginRequest } from "@/types/auth";
 
 export function useAuth() {

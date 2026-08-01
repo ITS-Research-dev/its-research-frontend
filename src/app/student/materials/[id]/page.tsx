@@ -54,14 +54,14 @@ export default async function MaterialDetailPage({ params }: Props) {
           switch (item.type) {
             case "heading":
               return (
-                <h2 key={index} className="text-2xl font-bold text-text">
+                <h2 key={index} className="text-xl font-bold text-text">
                   {item.value as string}
                 </h2>
               );
 
             case "paragraph":
               return (
-                <p key={index} className="mb-5 leading-8 text-description">
+                <p key={index} className="mb-5 leading-7 text-description">
                   {item.value}
                 </p>
               );
