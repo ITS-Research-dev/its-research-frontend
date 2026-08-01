@@ -9,7 +9,7 @@ export default function MaterialHeader({
 }: MaterialHeaderProps) {
   return (
     <div className="space-y-2">
-      <h1 className="text-4xl font-bold text-text">{title}</h1>
+      <h1 className="text-2xl font-bold text-text">{title}</h1>
 
       {description && (
         <p className="max-w-3xl text-description leading-7">{description}</p>
