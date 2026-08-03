@@ -7,7 +7,6 @@ import { LoginRequest, LoginResponse } from "@/types/auth";
 class AuthService {
   async login(payload: LoginRequest): Promise<LoginResponse> {
     const response = await api.post<LoginResponse>(ROUTES.LOGIN, payload);
-
     return response.data;
   }
 

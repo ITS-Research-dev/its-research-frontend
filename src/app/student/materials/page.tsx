@@ -1,34 +1,16 @@
+"use client";
+
 import PageHeader from "@/components/common/PageHeader";
 import ItemList from "@/components/common/ItemList";
+import { useMaterials } from "@/hooks/useMaterial";
+import Loading from "@/components/common/Loading";
 
 export default function MaterialPage() {
-  const materials = [
-    {
-      id: "1",
-      title: "Variabel dan Tipe Data",
-      status: "completed" as const,
-      icon: "book" as const,
-    },
-    {
-      id: "2",
-      title: "Percabangan (If Else)",
-      status: "learning" as const,
-      icon: "code" as const,
-    },
-    {
-      id: "3",
-      title: "Perulangan",
-      status: "locked" as const,
-      icon: "brain" as const,
-    },
-    {
-      id: "4",
-      title: "Function",
-      status: "locked" as const,
-      icon: "file" as const,
-    },
-  ];
+const { materials, loading } = useMaterials();
 
+  if (loading) {
+    return <Loading open={true} text="Memuat materi..." />;
+  }
   return (
     <div className="space-y-8">
       <PageHeader
