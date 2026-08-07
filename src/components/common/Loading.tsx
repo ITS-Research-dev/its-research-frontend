@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 
 interface LoadingProps {
-  open: boolean;
+  open?: boolean;
   text?: string;
 }
 
