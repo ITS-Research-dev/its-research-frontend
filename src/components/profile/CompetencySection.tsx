@@ -31,7 +31,7 @@ export default function CompetencySection({ competencies }: Props) {
     <Card className="p-7">
       <h2 className="mb-6 text-xl font-bold text-text">Rata-rata Kompetensi</h2>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3">
         {competencies.map((item) => {
           const Icon = iconMap[item.name as keyof typeof iconMap] ?? Brain;
 

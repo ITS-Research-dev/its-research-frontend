@@ -35,7 +35,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      await AuthService.logout();
+      // await AuthService.logout();
     } finally {
       storage.clear();
 

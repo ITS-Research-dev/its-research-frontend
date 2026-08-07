@@ -1,15 +1,12 @@
 "use client";
 
 import Link from "next/link";
-
 import { BookOpen, BrainCircuit, Code2, FileCode, Lock } from "lucide-react";
-
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 
 export type ItemStatus = "completed" | "learning" | "locked";
-
 export type ItemIcon = "book" | "code" | "brain" | "file";
 
 interface ItemCardProps {
@@ -19,6 +16,7 @@ interface ItemCardProps {
   icon?: ItemIcon;
   buttonText?: string;
   className?: string;
+  href: string;
 }
 
 const icons = {
@@ -35,6 +33,7 @@ export default function ItemCard({
   icon = "book",
   buttonText,
   className = "",
+  href,
 }: ItemCardProps) {
   const Icon = icons[icon];
 
@@ -115,7 +114,7 @@ export default function ItemCard({
               {config.button}
             </Button>
           ) : (
-            <Link href={`/student/materials/${id}`}>
+            <Link href={href}>
               <Button variant={status === "learning" ? "primary" : "outline"}>
                 {config.button}
               </Button>
