@@ -1,9 +1,31 @@
-export default function TeacherDashboard() {
-  return (
-    <div>
-      <h1 className="text-3xl font-bold">Dashboard Guru</h1>
+"use client";
 
-      <p className="mt-2 text-slate-600">Selamat datang di dashboard guru.</p>
+import Loading from "@/components/common/Loading";
+import PageHeader from "@/components/common/PageHeader";
+
+import DashboardSummary from "@/components/dashboard/DashboardSummary";
+
+import { useDashboard } from "@/hooks/useDashboard";
+
+export default function TeacherDashboardPage() {
+  const { summary, topicScores, efficiency, loading } = useDashboard();
+
+  if (loading || !summary || !efficiency) {
+    return <Loading open={loading} />;
+  }
+
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title="Dashboard"
+        description="Pantau performa pembelajaran, distribusi nilai, dan efisiensi penilaian AI."
+      />
+
+      <DashboardSummary
+        summary={summary}
+        topicScores={topicScores}
+        efficiency={efficiency}
+      />
     </div>
   );
 }
