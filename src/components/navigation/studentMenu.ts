@@ -20,7 +20,7 @@ export const studentMenu = [
   },
   {
     title: "Studi Kasus",
-    href: "/student/case-study",
+    href: "/student/case",
     icon: FileCode,
   },
   {

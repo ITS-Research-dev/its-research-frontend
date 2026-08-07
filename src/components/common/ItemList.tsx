@@ -6,6 +6,7 @@ export interface Item {
   status: ItemStatus;
   icon?: ItemIcon;
   buttonText?: string;
+  href: string;
 }
 
 interface ItemListProps {
@@ -23,6 +24,7 @@ export default function ItemList({ items }: ItemListProps) {
           status={item.status}
           icon={item.icon}
           buttonText={item.buttonText}
+          href={item.href}
         />
       ))}
     </div>

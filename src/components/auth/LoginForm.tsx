@@ -57,7 +57,7 @@ export default function LoginForm() {
       <div className="mb-10 text-center">
         <h1 className="text-3xl font-bold text-primary">Koda</h1>
 
-        <p className="mt-2 text-description">Asesmen Adaptif Python</p>
+        <p className="mt-2 text-description">Asesmen Adaptif</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-5">
