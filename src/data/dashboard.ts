@@ -6,9 +6,7 @@ import {
 
 export const teacherDashboardSummary: TeacherDashboardSummary = {
   totalStudents: 35,
-
   averageAssessmentTime: "4 detik",
-
   averageScore: 83,
 };
 

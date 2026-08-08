@@ -17,9 +17,10 @@ import {
 import { CompetencyTrend, ProfileResponse, RawGraphProfile } from "@/types/profile";
 import { RoundNumber } from "@/utils/global";
 import { DropdownItem } from "../common/DataTable";
+import TableLoading from "../common/TableLoading";
 
 interface Props {
-  entries: { [key: string]: { [key: string]: RawGraphProfile } };
+  entries: { [key: string]: { [key: string]: RawGraphProfile } } | [];
   topics: string[];
 }
 
@@ -108,94 +109,87 @@ export default function CompetencyTrendChart({ entries, topics }: Props) {
   const [topic, setTopic] = useState("all");
 
   const data = useMemo(() => {
+    if(Array.isArray(entries)) return []
     return formatEntries(entries, period, topic);
   }, [period, topic, entries]);
 
   const trend = getTrendInfo(data)
 
+return data.length < 1 ? (
+  <TableLoading />
+) : (
+  <Card className="p-7">
+    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <div>
+        <h2 className="text-xl font-bold text-text">
+          Trend Rata-rata Kompetensi
+        </h2>
 
-  return (
-    <Card className="p-7">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-text">
-            Trend Rata-rata Kompetensi
-          </h2>
+        <p className="mt-1 text-description">
+          Perkembangan rata-rata kompetensi berdasarkan hasil asesmen.
+        </p>
+      </div>
 
-          <p className="mt-1 text-description">
-            Perkembangan rata-rata kompetensi berdasarkan hasil asesmen.
-          </p>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Dropdown
+          value={topic}
+          onChange={setTopic}
+          items={formatRawTopics(topics)}
+          placeholder="Topik"
+        />
+
+        <div className="flex rounded-xl border border-border bg-surface p-1">
+          <button
+            onClick={() => setPeriod("week")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              period === "week" ? "bg-primary text-white" : "text-description"
+            }`}
+          >
+            Minggu
+          </button>
+
+          <button
+            onClick={() => setPeriod("month")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              period === "month"
+                ? "bg-primary text-white"
+                : "text-description"
+            }`}
+          >
+            Bulan
+          </button>
         </div>
+      </div>
+    </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Dropdown
-            value={topic}
-            onChange={setTopic}
-            items={formatRawTopics(topics)}
-            placeholder="Topik"
+    <div className="mt-8 h-90">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="4 4" />
+          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+          <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+          <Tooltip />
+          <Line
+            type="monotone"
+            dataKey="score"
+            stroke="#3fbcc3"
+            strokeWidth={3}
+            dot={{ r: 6 }}
+            activeDot={{ r: 8 }}
           />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
 
-          <div className="flex rounded-xl border border-border bg-surface p-1">
-            <button
-              onClick={() => setPeriod("week")}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                period === "week" ? "bg-primary text-white" : "text-description"
-              }`}
-            >
-              Minggu
-            </button>
-
-            <button
-              onClick={() => setPeriod("month")}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                period === "month"
-                  ? "bg-primary text-white"
-                  : "text-description"
-              }`}
-            >
-              Bulan
-            </button>
-          </div>
-        </div>
+    {trend && (
+      <div className="mt-6 rounded-2xl bg-primary/5 p-5">
+        <p className={`font-semibold ${trend.colorClass}`}>
+          {trend.emoji} {trend.title}
+        </p>
+        <p className="mt-1 text-description">{trend.description}</p>
       </div>
+    )}
+  </Card>
+);
 
-      <div className="mt-8 h-90">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="4 4" />
-
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-
-            <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-
-            <Tooltip />
-
-            <Line
-              type="monotone"
-              dataKey="score"
-              stroke="#3fbcc3"
-              strokeWidth={3}
-              dot={{
-                r: 6,
-              }}
-              activeDot={{
-                r: 8,
-              }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {trend && (
-          <div className="mt-6 rounded-2xl bg-primary/5 p-5">
-            <p className={`font-semibold ${trend.colorClass}`}>
-              {trend.emoji} {trend.title}
-            </p>
-            <p className="mt-1 text-description">
-              {trend.description}
-            </p>
-          </div>
-        )}
-    </Card>
-  );
 }
