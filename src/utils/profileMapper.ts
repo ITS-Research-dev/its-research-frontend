@@ -1,3 +1,4 @@
+import { AssementDetailResponse, AssessmentDetail } from "@/types/asessment";
 import {
   ProfileResponse,
   Scoring,

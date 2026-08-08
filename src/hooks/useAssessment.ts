@@ -4,39 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { assessmentService } from "@/services/asessment.service";
 
-import { AssessmentDetail, AssessmentHistoryItem } from "@/types/asessment";
-
-export function useAssessmentHistory() {
-  const [histories, setHistories] = useState<AssessmentHistoryItem[]>([]);
-
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-
-    const data = await assessmentService.getHistories();
-
-    setHistories(data);
-
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  return {
-    histories,
-
-    loading,
-
-    reload: load,
-  };
-}
+import { AssessmentDetail } from "@/types/asessment";
+import { buildProfileSummary } from "@/utils/assessmentSummary";
 
 export function useAssessmentDetails() {
   const [details, setDetails] = useState<AssessmentDetail[]>([]);
-
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -64,16 +36,12 @@ export function useAssessmentDetails() {
 
 export function useAssessmentDetail(id: string) {
   const [detail, setDetail] = useState<AssessmentDetail>();
-
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
-
     const data = await assessmentService.getDetailById(id);
-
-    setDetail(data);
-
+    setDetail(buildProfileSummary(data));
     setLoading(false);
   }, [id]);
 

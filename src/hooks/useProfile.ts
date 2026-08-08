@@ -1,11 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-
-import { assessmentService } from "@/services/asessment.service";
-
-import { buildProfileSummary } from "@/utils/assessmentSummary";
-
 import { ProfileSummary } from "@/types/profile";
 import profileService from "@/services/profile.service";
 

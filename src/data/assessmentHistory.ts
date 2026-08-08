@@ -34,7 +34,7 @@ export const assessmentDetails: AssessmentDetail[] = [
 
     score: 95,
 
-    level: "Proficient",
+  level: "Proficient",
 
     hintsUsed: 1,
 

@@ -9,8 +9,6 @@ import DataTable, { DropdownItem } from "@/components/common/DataTable";
 
 import { Eye } from "lucide-react";
 
-import { useAssessmentHistory } from "@/hooks/useAssessment";
-import { AssessmentHistoryItem } from "@/types/asessment";
 import { ProfileResponse } from "@/types/profile";
 
 interface Props {

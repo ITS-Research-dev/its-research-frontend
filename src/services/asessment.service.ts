@@ -1,17 +1,13 @@
+import { ROUTES } from "@/constants/routes";
 import {
   assessmentDetails,
   assessmentHistories,
 } from "@/data/assessmentHistory";
+import api from "@/lib/api";
 
-import { AssessmentDetail, AssessmentHistoryItem } from "@/types/asessment";
+import { AssementDetailResponse, AssessmentDetail } from "@/types/asessment";
 
 class AssessmentService {
-  /**
-   * Mengambil seluruh riwayat asesmen
-   */
-  async getHistories(): Promise<AssessmentHistoryItem[]> {
-    return assessmentHistories;
-  }
 
   /**
    * Mengambil seluruh detail asesmen
@@ -23,8 +19,9 @@ class AssessmentService {
   /**
    * Mengambil detail asesmen berdasarkan id
    */
-  async getDetailById(id: string): Promise<AssessmentDetail | undefined> {
-    return assessmentDetails.find((item) => item.id === id);
+  async getDetailById(id: string): Promise<AssementDetailResponse> {
+        const response = await api.get<AssementDetailResponse>(`${ROUTES.API.STUDENT.PROFILE}/${id}`)
+        return response.data
   }
 }
 

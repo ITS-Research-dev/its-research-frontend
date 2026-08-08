@@ -1,3 +1,5 @@
+import { Scoring } from "./profile";
+
 export type AssessmentLevel =
   | "Novice"
   | "Beginner"
@@ -39,12 +41,23 @@ export interface AssessmentHistoryItem {
 
 export interface AssessmentDetail extends AssessmentHistoryItem {
   hintsUsed: number;
-
-  duration: string;
-
   feedback: string;
 
   competencies: CompetencyScore[];
+}
 
-  questions: AssessmentQuestion[];
+export interface AssementDetailResponse {
+  id: string;
+  level: AssessmentLevel;
+  hintUsage: number;
+  averageScore: number;
+  flagOverride: boolean;
+  aiScore: Scoring;
+  aiSuggestion: string;
+  teacherScore: Scoring;
+  teacherSuggestion: string;
+  test: {
+    title: string;
+    topic: { title: string };
+  };
 }

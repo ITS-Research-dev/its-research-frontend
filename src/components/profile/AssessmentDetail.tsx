@@ -85,7 +85,7 @@ export default function AssessmentDetail({ id }: Props) {
 
       <FeedbackCard feedback={detail.feedback} />
 
-      <CompetencySection competencies={detail.competencies} />
+      <CompetencySection competencies={detail.competencies} totalCase={1} />
     </div>
   );
 }
