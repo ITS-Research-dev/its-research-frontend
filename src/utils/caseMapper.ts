@@ -1,21 +1,34 @@
-import { CaseCardData, CaseItem } from "@/types/case";
+import { CaseCardData, CaseIcon, CaseItem, CaseStatus } from "@/types/case";
 
-export function mapToCaseCardData(item: CaseItem, index: number): CaseCardData {
-  let status: CaseCardData["status"];
+const ICONS: CaseIcon[] = ["book", "code", "brain", "file"];
 
-  if (index === 0) {
-    status = "learning";
-  } else if (index === 1) {
-    status = "completed";
-  } else {
-    status = "locked";
-  }
+function getStatus(startDate: string): CaseStatus {
+  const start = new Date(startDate);
+  const now = new Date();
 
+  const startDay = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate(),
+  );
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (startDay < today) return "completed";
+  if (startDay.getTime() === today.getTime()) return "learning";
+  return "locked";
+}
+
+function getIconById(id: string): CaseIcon {
+  const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return ICONS[hash % ICONS.length];
+}
+
+export function mapToCaseCardData(item: CaseItem): CaseCardData {
   return {
     id: item.id,
     title: item.title,
-    status,
-    icon: "code",
+    status: getStatus(item.startDate),
+    icon: getIconById(item.id),
     href: `/student/case/${item.id}`,
   };
 }

@@ -5,21 +5,33 @@ import Link from "next/link";
 
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import DataTable from "@/components/common/DataTable";
+import DataTable, { DropdownItem } from "@/components/common/DataTable";
 
 import { Eye } from "lucide-react";
 
 import { useAssessmentHistory } from "@/hooks/useAssessment";
 import { AssessmentHistoryItem } from "@/types/asessment";
+import { ProfileResponse } from "@/types/profile";
+
+interface Props {
+  data: ProfileResponse[],
+  topics: string[]
+}
 
 function levelVariant(level: string) {
   switch (level) {
-    case "Proficient":
+    case "Competent":
+      return "success";
+    case "Expert":
       return "success";
 
-    case "Competent":
+    case "Advance/Beginner":
+      return "primary";
+    case "Advance/Beginner":
       return "primary";
 
+    case "Nocice":
+      return "warning";
     case "Beginner":
       return "warning";
 
@@ -28,70 +40,60 @@ function levelVariant(level: string) {
   }
 }
 
-export default function AssessmentHistory() {
-  const { histories, loading } = useAssessmentHistory();
-
-  const [search, setSearch] = useState("");
-
-  const [topic, setTopic] = useState("all");
-
-  const [page, setPage] = useState(1);
-
-  const pageSize = 5;
-
-  const topicOptions = useMemo(() => {
-    const uniqueTopics = Array.from(
-      new Set(histories.map((item) => item.topic)),
-    );
-
+function formatRawTopics(topics: string[]) : DropdownItem[] {
     return [
       {
         label: "Semua Topik",
         value: "all",
       },
-      ...uniqueTopics.map((topicName) => ({
+      ...topics.map((topicName) => ({
         label: topicName,
         value: topicName,
       })),
     ];
-  }, [histories]);
+}
+
+export default function AssessmentHistory({ data, topics }: Props) {
+  const [search, setSearch] = useState("");
+  const [topic, setTopic] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const filtered = useMemo(() => {
-    return histories.filter((item) => {
+    return data.filter((item) => {
       const keyword = search.toLowerCase();
-
+      
       const matchKeyword =
-        item.topic.toLowerCase().includes(keyword) ||
-        item.title.toLowerCase().includes(keyword);
+        item.test.title.toLowerCase().includes(keyword) ||
+        item.test.topic.title.toLowerCase().includes(keyword);
 
-      const matchTopic = topic === "all" || item.topic === topic;
-
-      return matchKeyword && matchTopic;
-    });
-  }, [histories, search, topic]);
+        const matchTopic = topic === "all" || item.test.topic.title === topic;
+        
+        return matchKeyword && matchTopic;
+      });
+  }, [data, search, topic]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);
-
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const columns = [
     {
       header: "Topik",
-      render: (item: AssessmentHistoryItem) => item.topic,
+      render: (item: ProfileResponse) => item.test.topic.title,
     },
     {
       header: "Soal",
-      render: (item: AssessmentHistoryItem) => item.title,
+      render: (item: ProfileResponse) => item.test.title,
     },
     {
       header: "Level",
-      render: (item: AssessmentHistoryItem) => (
+      render: (item: ProfileResponse) => (
         <Badge variant={levelVariant(item.level)}>{item.level}</Badge>
       ),
     },
     {
       header: "Aksi",
-      render: (item: AssessmentHistoryItem) => (
+      render: (item: ProfileResponse) => (
         <Link href={`/student/profile/history/${item.id}`}>
           <Button variant="outline" size="sm" startIcon={<Eye size={16} />}>
             Detail
@@ -114,14 +116,13 @@ export default function AssessmentHistory() {
       <DataTable
         columns={columns}
         data={paginated}
-        loading={loading}
         searchValue={search}
         onSearch={(value) => {
           setSearch(value);
           setPage(1);
         }}
         dropdownValue={topic}
-        dropdownItems={topicOptions}
+        dropdownItems={formatRawTopics(topics)}
         dropdownPlaceholder="Filter Topik"
         onDropdownChange={(value) => {
           setTopic(value);

@@ -15,114 +15,133 @@ import {
   Bar,
   Cell,
 } from "recharts";
+import { LevelTrend, RawGraphProfile } from "@/types/profile";
+import { DropdownItem } from "../common/DataTable";
+import { RoundNumber } from "@/utils/global";
+import { AssessmentLevel } from "@/types/asessment";
 
-const topicItems = [
-  {
-    label: "Semua Topik",
-    value: "all",
-  },
-  {
-    label: "Variabel & Tipe Data",
-    value: "variables",
-  },
-  {
-    label: "Percabangan",
-    value: "condition",
-  },
-  {
-    label: "Perulangan",
-    value: "loop",
-  },
+const colors = ["#ef4444", "#f59e0b","#f59e0b", "#3b82f6","#3b82f6", "#22c55e", "#22c55e"];
+const levelName = ["", "Novice", "Beginner","Advance/Beginner", "Advance", "Competent", "Expert"];
+
+const THRESHOLDS: { level: AssessmentLevel; min: number, color: string }[] = [
+  { level: "Expert", min: 90, color: "#22c55e" },
+  { level: "Competent", min: 80, color: "#22c55e" },
+  { level: "Advance", min: 70, color: "#3b82f6" },
+  { level: "Advance/Beginner", min: 60, color: "#3b82f6" },
+  { level: "Beginner", min: 50, color:  "#f59e0b"},
+  { level: "Novice", min: 0, color: "#f59e0b" },
 ];
 
-const chartData = {
-  all: {
-    week: [
-      { label: "M1", level: 1 },
-      { label: "M2", level: 2 },
-      { label: "M3", level: 2 },
-      { label: "M4", level: 3 },
-      { label: "M5", level: 4 },
-    ],
-    month: [
-      { label: "Jan", level: 1 },
-      { label: "Feb", level: 2 },
-      { label: "Mar", level: 2 },
-      { label: "Apr", level: 3 },
-      { label: "Mei", level: 4 },
-    ],
-  },
+interface Props {
+  entries: { [key: string]: { [key: string]: RawGraphProfile } };
+  topics: string[];
+}
 
-  variables: {
-    week: [
-      { label: "M1", level: 1 },
-      { label: "M2", level: 2 },
-      { label: "M3", level: 2 },
-      { label: "M4", level: 3 },
-      { label: "M5", level: 4 },
-    ],
-    month: [
-      { label: "Jan", level: 1 },
-      { label: "Feb", level: 2 },
-      { label: "Mar", level: 3 },
-      { label: "Apr", level: 3 },
-      { label: "Mei", level: 4 },
-    ],
-  },
-
-  condition: {
-    week: [
-      { label: "M1", level: 1 },
-      { label: "M2", level: 1 },
-      { label: "M3", level: 2 },
-      { label: "M4", level: 2 },
-      { label: "M5", level: 3 },
-    ],
-    month: [
-      { label: "Jan", level: 1 },
-      { label: "Feb", level: 2 },
-      { label: "Mar", level: 2 },
-      { label: "Apr", level: 3 },
-      { label: "Mei", level: 3 },
-    ],
-  },
-
-  loop: {
-    week: [
-      { label: "M1", level: 2 },
-      { label: "M2", level: 2 },
-      { label: "M3", level: 3 },
-      { label: "M4", level: 3 },
-      { label: "M5", level: 4 },
-    ],
-    month: [
-      { label: "Jan", level: 2 },
-      { label: "Feb", level: 2 },
-      { label: "Mar", level: 3 },
-      { label: "Apr", level: 4 },
-      { label: "Mei", level: 4 },
-    ],
-  },
+interface TrendInfo {
+  emoji: string;
+  title: string;
+  description: string;
+  colorClass: string;
 };
 
-const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e"];
 
-const levelName = ["", "Novice", "Beginner", "Competent", "Proficient"];
+function isWeekKey(key: string): boolean {
+  return key.includes("-"); // "01-07" -> week
+}
 
-export default function LevelTrendChart() {
-  const [topic, setTopic] = useState<keyof typeof chartData>("all");
+function isMonthKey(key: string): boolean {
+  return !key.includes("-"); // "08" -> month
+}
 
+function formatLevel(score: number) : { level: AssessmentLevel, color: string }  {
+  const clamped = Math.max(0, Math.min(100, score));
+
+  for (const { level, min, color } of THRESHOLDS) {
+    if (clamped > min || (min === 0 && clamped >= 0)) {
+      if (min !== 0 && clamped > min) return { level, color };
+      if (min === 0) return {level, color};
+    }
+  }
+
+  return { level: "Novice", color: "#ef4444"};
+}
+
+function formatEntries(
+  entries: { [key: string]: { [key: string]: RawGraphProfile } },
+  period: "week" | "month",
+  topic: string
+): LevelTrend[] {
+  const matcher = period === "week" ? isWeekKey : isMonthKey;
+  return Object.entries(entries)
+    .filter(([key]) => matcher(key))
+    .map(([key, bucket]) => {
+      const value = topic === "all" ? bucket.total : bucket[topic];
+      const score = value ? RoundNumber(value.avg / value.count) : 0 
+      return {
+        name: key,
+        score, 
+        ...formatLevel(score)
+      };
+    });
+}
+
+function formatRawTopics(topics: string[]) : DropdownItem[] {
+    return [
+      {
+        label: "Semua Topik",
+        value: "all",
+      },
+      ...topics.map((topicName) => ({
+        label: topicName,
+        value: topicName,
+      })),
+    ];
+}
+
+function getTrendInfo(data: { score: number, level: AssessmentLevel }[]): TrendInfo | null {
+  if (data.length < 2) return null;
+
+  const first = data[0].score;
+  const last = data[data.length - 1].score;
+  const currentLevel = data[data.length - 1].level;
+  const diff = last - first;
+  const absDiff = Math.abs(diff);
+
+  if (diff > 0) {
+    return {
+      emoji: "📈",
+      title: `Levelmu meningkat karena kenaikan ${absDiff} poin dari sejak awal pembelajaran.`,
+      description: `Pertahankan konsistensi belajar untuk mencapai nilai maksimal. Sekarang kamu berada di level ${currentLevel}`,
+      colorClass: "text-primary",
+    };
+  }
+
+  if (diff < 0) {
+    return {
+      emoji: "📉",
+      title: `Levelmu menurun karena penurunan sebanyak ${absDiff} poin dibanding periode awal.`,
+      description: `Yuk, evaluasi kembali proses belajarmu agar kembali meningkat. Sekarang kamu berada di level ${currentLevel}`,
+      colorClass: "text-destructive",
+    };
+  }
+
+  return {
+    emoji: "➖",
+    title: "Levelmu stabil dibanding periode awal.",
+    description: `Coba tingkatkan intensitas latihan untuk mendorong kemajuan lebih lanjut. Sekarang kamu berada di level ${currentLevel}`,
+    colorClass: "text-muted-foreground",
+  };
+}
+
+export default function LevelTrendChart({entries, topics }: Props) {
   const [period, setPeriod] = useState<"week" | "month">("week");
+  const [topic, setTopic] = useState("all");
 
-  const data = useMemo(() => {
-    return chartData[topic][period];
-  }, [topic, period]);
-
-  const first = data[0].level;
-
-  const last = data[data.length - 1].level;
-
-  const increase = last - first;
+ const data = useMemo(() => {
+     return formatEntries(entries, period, topic);
+   }, [period, topic, entries]);
+ 
+   const trend = getTrendInfo(data)
 
   return (
     <Card className="p-7">
@@ -140,8 +159,8 @@ export default function LevelTrendChart() {
           <div className="w-64">
             <Dropdown
               value={topic}
-              onChange={(value) => setTopic(value as keyof typeof chartData)}
-              items={topicItems}
+              onChange={setTopic}
+              items={formatRawTopics(topics)}
               placeholder="Pilih Topik"
             />
           </div>
@@ -176,26 +195,24 @@ export default function LevelTrendChart() {
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="4 4" />
 
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
 
             <YAxis
-              domain={[1, 4]}
-              ticks={[1, 2, 3, 4]}
-              tickFormatter={(value) => levelName[value]}
+              domain={[0,100]}
+              // ticks={[1, 2, 3, 4]}
+              // tickFormatter={(value) => levelName[value]}
               tick={{ fontSize: 10.5 }}
             />
 
             <Tooltip
               formatter={(value) => {
-                const level = Number(value);
-
-                return [levelName[level] ?? "-", "Level"];
+                return value
               }}
             />
 
-            <Bar dataKey="level" radius={[8, 8, 0, 0]}>
+            <Bar dataKey="score" radius={[8, 8, 0, 0]}>
               {data.map((item, index) => (
-                <Cell key={index} fill={colors[item.level - 1]} />
+                <Cell key={index} fill={item.color}/>
               ))}
             </Bar>
           </BarChart>
@@ -203,16 +220,16 @@ export default function LevelTrendChart() {
       </div>
 
       {/* Summary */}
-      <div className="mt-6 rounded-2xl border border-success/20 bg-success/10 p-5">
-        <p className="font-semibold text-success">
-          🚀 Levelmu meningkat {increase} tingkat sejak awal pembelajaran.
+       {trend && (
+        <div className="mt-6 rounded-2xl border border-success/20 bg-success/10 p-5">
+        <p className={`font-semibold ${trend.colorClass}`}>
+          {trend.emoji} {trend.title}
         </p>
-
         <p className="mt-1 text-description">
-          Saat ini kamu berada pada level{" "}
-          <span className="font-semibold text-success">{levelName[last]}</span>.
+          {trend.description}
         </p>
       </div>
+        )}
     </Card>
   );
 }

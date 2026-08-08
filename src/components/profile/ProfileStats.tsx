@@ -3,6 +3,7 @@ import { Award, Lightbulb, BookOpen, ClipboardCheck } from "lucide-react";
 import StatCard from "./StatCard";
 
 import { ProfileSummary } from "@/types/profile";
+import { RoundNumber } from "@/utils/global";
 
 interface Props {
   summary: ProfileSummary;
@@ -13,7 +14,7 @@ export default function ProfileStats({ summary }: Props) {
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
       <StatCard
         title="Rata-rata Nilai"
-        value={summary.averageScore}
+        value={RoundNumber(summary.averageScore)}
         icon={Award}
         iconColor="text-success"
         iconBackground="bg-success/10"

@@ -16,7 +16,7 @@ interface Column<T> {
   render: (row: T) => ReactNode;
 }
 
-interface DropdownItem {
+export interface DropdownItem {
   label: string;
 
   value: string;

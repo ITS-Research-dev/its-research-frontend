@@ -4,7 +4,8 @@ export const ROUTES = {
 
   API: {
     STUDENT: {
-      MATERI: "/siswa/materi"
+      MATERI: "/siswa/materi",
+      PROFILE: "/siswa/profile"
     }
   },
 

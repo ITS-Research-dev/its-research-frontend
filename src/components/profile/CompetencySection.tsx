@@ -12,9 +12,11 @@ import {
 import CompetencyCard from "./CompetencyCard";
 
 import { CompetencyScore } from "@/types/asessment";
+import { RoundNumber, TitleCase, } from "@/utils/global";
 
 interface Props {
   competencies: CompetencyScore[];
+  totalCase: number;
 }
 
 const iconMap = {
@@ -26,7 +28,7 @@ const iconMap = {
   "Code Quality": Lightbulb,
 };
 
-export default function CompetencySection({ competencies }: Props) {
+export default function CompetencySection({ competencies, totalCase }: Props) {
   return (
     <Card className="p-7">
       <h2 className="mb-6 text-xl font-bold text-text">Rata-rata Kompetensi</h2>
@@ -38,10 +40,10 @@ export default function CompetencySection({ competencies }: Props) {
           return (
             <CompetencyCard
               key={item.name}
-              title={item.name}
-              value={item.score}
+              title={TitleCase(item.name)}
+              value={RoundNumber(item.score / totalCase)}
               icon={Icon}
-            />
+          />
           );
         })}
       </div>

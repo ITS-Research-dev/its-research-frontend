@@ -1,8 +1,10 @@
 export type AssessmentLevel =
   | "Novice"
   | "Beginner"
+  | "Advance/Beginner"
+  | "Advance"
   | "Competent"
-  | "Proficient";
+  | "Expert";
 
 export interface CompetencyScore {
   name: string;

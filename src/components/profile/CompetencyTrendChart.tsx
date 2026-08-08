@@ -14,60 +14,105 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
+import { CompetencyTrend, ProfileResponse, RawGraphProfile } from "@/types/profile";
+import { RoundNumber } from "@/utils/global";
+import { DropdownItem } from "../common/DataTable";
 
-const topicOptions = [
-  {
-    label: "Semua Topik",
-    value: "all",
-  },
-  {
-    label: "Variabel",
-    value: "variable",
-  },
-  {
-    label: "Percabangan",
-    value: "if",
-  },
-  {
-    label: "Perulangan",
-    value: "loop",
-  },
-  {
-    label: "Function",
-    value: "function",
-  },
-];
+interface Props {
+  entries: { [key: string]: { [key: string]: RawGraphProfile } };
+  topics: string[];
+}
 
-const weeklyData = [
-  { name: "M1", score: 60 },
-  { name: "M2", score: 68 },
-  { name: "M3", score: 74 },
-  { name: "M4", score: 81 },
-  { name: "M5", score: 88 },
-];
+interface TrendInfo {
+  emoji: string;
+  title: string;
+  description: string;
+  colorClass: string;
+};
 
-const monthlyData = [
-  { name: "Jan", score: 65 },
-  { name: "Feb", score: 70 },
-  { name: "Mar", score: 78 },
-  { name: "Apr", score: 85 },
-  { name: "Mei", score: 89 },
-];
 
-export default function CompetencyTrendChart() {
+function isWeekKey(key: string): boolean {
+  return key.includes("-"); // "01-07" -> week
+}
+
+function isMonthKey(key: string): boolean {
+  return !key.includes("-"); // "08" -> month
+}
+
+function formatEntries(
+  entries: { [key: string]: { [key: string]: RawGraphProfile } },
+  period: "week" | "month",
+  topic: string
+): CompetencyTrend[] {
+  const matcher = period === "week" ? isWeekKey : isMonthKey;
+  return Object.entries(entries)
+    .filter(([key]) => matcher(key))
+    .map(([key, bucket]) => {
+      const value = topic === "all" ? bucket.total : bucket[topic];
+      return {
+        name: key,
+        score : value ? RoundNumber(value.avg / value.count) : 0,
+      };
+    });
+}
+
+function formatRawTopics(topics: string[]) : DropdownItem[] {
+    return [
+      {
+        label: "Semua Topik",
+        value: "all",
+      },
+      ...topics.map((topicName) => ({
+        label: topicName,
+        value: topicName,
+      })),
+    ];
+}
+
+function getTrendInfo(data: { score: number }[]): TrendInfo | null {
+  if (data.length < 2) return null;
+
+  const first = data[0].score;
+  const last = data[data.length - 1].score;
+  const diff = last - first;
+  const absDiff = Math.abs(diff);
+
+  if (diff > 0) {
+    return {
+      emoji: "📈",
+      title: `Kompetensimu meningkat ${absDiff} poin dibanding periode awal.`,
+      description: "Pertahankan konsistensi belajar untuk mencapai nilai maksimal.",
+      colorClass: "text-primary",
+    };
+  }
+
+  if (diff < 0) {
+    return {
+      emoji: "📉",
+      title: `Kompetensimu menurun ${absDiff} poin dibanding periode awal.`,
+      description: "Yuk, evaluasi kembali proses belajarmu agar kembali meningkat.",
+      colorClass: "text-destructive",
+    };
+  }
+
+  return {
+    emoji: "➖",
+    title: "Kompetensimu stabil dibanding periode awal.",
+    description: "Coba tingkatkan intensitas latihan untuk mendorong kemajuan lebih lanjut.",
+    colorClass: "text-muted-foreground",
+  };
+}
+
+export default function CompetencyTrendChart({ entries, topics }: Props) {
   const [period, setPeriod] = useState<"week" | "month">("week");
-
   const [topic, setTopic] = useState("all");
 
   const data = useMemo(() => {
-    return period === "week" ? weeklyData : monthlyData;
-  }, [period]);
+    return formatEntries(entries, period, topic);
+  }, [period, topic, entries]);
 
-  const first = data[0].score;
+  const trend = getTrendInfo(data)
 
-  const last = data[data.length - 1].score;
-
-  const increase = last - first;
 
   return (
     <Card className="p-7">
@@ -86,7 +131,7 @@ export default function CompetencyTrendChart() {
           <Dropdown
             value={topic}
             onChange={setTopic}
-            items={topicOptions}
+            items={formatRawTopics(topics)}
             placeholder="Topik"
           />
 
@@ -141,15 +186,16 @@ export default function CompetencyTrendChart() {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-6 rounded-2xl bg-primary/5 p-5">
-        <p className="font-semibold text-primary">
-          📈 Kompetensimu meningkat {increase} poin dibanding periode awal.
-        </p>
-
-        <p className="mt-1 text-description">
-          Pertahankan konsistensi belajar untuk mencapai nilai maksimal.
-        </p>
-      </div>
+      {trend && (
+          <div className="mt-6 rounded-2xl bg-primary/5 p-5">
+            <p className={`font-semibold ${trend.colorClass}`}>
+              {trend.emoji} {trend.title}
+            </p>
+            <p className="mt-1 text-description">
+              {trend.description}
+            </p>
+          </div>
+        )}
     </Card>
   );
 }

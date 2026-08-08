@@ -1,5 +1,4 @@
 export type CaseStatus = "completed" | "learning" | "locked";
-
 export type CaseIcon = "book" | "code" | "brain" | "file";
 
 /* ===========================
@@ -12,9 +11,7 @@ export interface Case {
 
 export interface CaseItem extends Case {
   id: string;
-
   totalTest: number;
-
   startDate: string;
 }
 

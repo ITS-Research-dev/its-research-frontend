@@ -7,6 +7,7 @@ import { assessmentService } from "@/services/asessment.service";
 import { buildProfileSummary } from "@/utils/assessmentSummary";
 
 import { ProfileSummary } from "@/types/profile";
+import profileService from "@/services/profile.service";
 
 export function useProfileSummary() {
   const [summary, setSummary] = useState<ProfileSummary>();
@@ -16,10 +17,7 @@ export function useProfileSummary() {
   const load = useCallback(async () => {
     setLoading(true);
 
-    const details = await assessmentService.getDetails();
-
-    const result = buildProfileSummary(details);
-
+    const result = await profileService.getProfile();
     setSummary(result);
 
     setLoading(false);

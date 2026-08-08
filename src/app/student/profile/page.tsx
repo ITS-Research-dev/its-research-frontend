@@ -28,13 +28,13 @@ export default function ProfilePage() {
 
       <ProfileStats summary={summary} />
 
-      <CompetencySection competencies={summary.competencies} />
+      <CompetencySection competencies={summary.competencies} totalCase={summary.totalCases} />
 
-      <CompetencyTrendChart />
+      <CompetencyTrendChart entries={summary.competencyTrend} topics={summary.nameMaterials} />
 
-      <LevelTrendChart />
+      <LevelTrendChart entries={summary.levelTrend} topics={summary.nameMaterials} />
 
-      <AssessmentHistory />
+      <AssessmentHistory data={summary.raw} topics={summary.nameMaterials}/>
     </div>
   );
 }

@@ -1,9 +1,12 @@
+import { ROUTES } from "@/constants/routes";
 import { caseDetails, caseItems } from "@/data/case";
-import { RunCodePayload, RunCodeResponse } from "@/types/case";
+import api from "@/lib/api";
+import { CaseItem, RunCodePayload, RunCodeResponse } from "@/types/case";
 
 class CaseService {
-  async getCases() {
-    return Promise.resolve(caseItems);
+  async getCases() : Promise<CaseItem[]> {
+    const response = await api.get<CaseItem[]>(ROUTES.API.STUDENT.MATERI);
+    return response.data;
   }
 
   async getCaseDetail(id: string) {
