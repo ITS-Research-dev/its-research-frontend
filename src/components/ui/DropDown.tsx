@@ -81,10 +81,10 @@ export default function Dropdown({
           hover:border-primary
         "
       >
-        <span className="flex items-center gap-2 text-text">
+        <span className="flex min-w-0 flex-1 items-center gap-2 text-text">
           {selected?.icon}
 
-          {selected?.label ?? placeholder}
+          <span className="truncate">{selected?.label ?? placeholder}</span>
         </span>
 
         <ChevronDown
@@ -142,7 +142,7 @@ export default function Dropdown({
             >
               {item.icon}
 
-              {item.label}
+              <span className="truncate">{item.label}</span>
             </button>
           ))}
         </div>

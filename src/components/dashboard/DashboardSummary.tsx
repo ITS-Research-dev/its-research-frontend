@@ -19,7 +19,11 @@ interface Props {
   efficiency: AIEfficiency;
 }
 
-export default function DashboardSummary({summary, topicScores, efficiency}: Props) {
+export default function DashboardSummary({
+  summary,
+  topicScores,
+  efficiency,
+}: Props) {
   return (
     <div className="space-y-6">
       <DashboardStats summary={summary} />
@@ -29,8 +33,8 @@ export default function DashboardSummary({summary, topicScores, efficiency}: Pro
         <AIEfficiencyCard data={efficiency} />
       </div>
 
-      <CompetencyTrendChart entries={[]} topics={[]}/>
-      <LevelTrendChart entries={[]} topics={[]} />
+      {/* <CompetencyTrendChart entries={[]} topics={[]}/> */}
+      {/* <LevelTrendChart entries={[]} topics={[]} /> */}
     </div>
   );
 }
