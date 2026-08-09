@@ -13,7 +13,7 @@ import RightPanel from "./RightPanel";
 import ConfirmModal from "../common/ConfirmModal";
 import AlertModal from "../common/AlertModal";
 
-import caseService from "@/services/case.service";
+import caseService, { mapScoringToCompetencies } from "@/services/case.service";
 import { mapPythonError } from "@/utils/errorMapper";
 
 interface Props {
@@ -40,6 +40,8 @@ export default function CaseDetail({ detail }: Props) {
   const [runHistory] = useState<RunHistory[]>([]);
 
   const [running, setRunning] = useState(false);
+
+  const [assessing, setAssessing] = useState(false);
 
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
@@ -137,31 +139,38 @@ export default function CaseDetail({ detail }: Props) {
 
   const handleSubmit = async () => {
     setShowSubmitModal(false);
-
-    setRunning(true);
+    setAssessing(true);
 
     try {
-      const response = await caseService.submitCase();
-      const score =
-        response.score ??
-        Math.round(
-          response.competencies.reduce((acc, c) => acc + c.score, 0) /
-            response.competencies.length,
-        );
+      const response = await caseService.submitCase({
+        soal: question.description,
+        expectedOutput: question.expectedOutput,
+        studentCode: answers[question.id] ?? "",
+        hintUsage: openedHints.length,
+      });
+
+      const competencies = mapScoringToCompetencies(response.aiScore);
 
       setQuestionResults((prev) => ({
         ...prev,
 
         [question.id]: {
           submitted: true,
-          score,
+          score: Math.round(response.overallScore),
           level: response.level,
-          feedback: response.feedback,
-          competencies: response.competencies,
+          feedback: response.aiSuggestion,
+          competencies,
         },
       }));
+    } catch {
+      setAlert({
+        open: true,
+        title: "Gagal Menilai",
+        description:
+          "Terjadi kesalahan saat menilai jawaban. Pastikan server AI aktif dan coba lagi.",
+      });
     } finally {
-      setRunning(false);
+      setAssessing(false);
     }
   };
 
@@ -191,7 +200,7 @@ export default function CaseDetail({ detail }: Props) {
           <CodeEditor
             code={answers[question.id] ?? ""}
             disabled={currentResult?.submitted ?? false}
-            running={running}
+            running={running || assessing}
             onCodeChange={handleCodeChange}
             onRun={handleRun}
             onSubmit={() => setShowSubmitModal(true)}
@@ -202,6 +211,7 @@ export default function CaseDetail({ detail }: Props) {
             result={currentResult}
             failedRunCount={failedRunCount}
             openedHints={openedHints}
+            assessing={assessing}
             onUseHint={handleUseHint}
           />
         </div>
@@ -210,10 +220,10 @@ export default function CaseDetail({ detail }: Props) {
       <ConfirmModal
         open={showSubmitModal}
         title="Submit Jawaban?"
-        description="Setelah jawaban disubmit, jawaban soal ini tidak dapat diubah kembali."
-        confirmText="Submit"
+        description="Kode kamu akan dinilai oleh AI. Proses ini bisa membutuhkan waktu beberapa menit. Setelah disubmit, jawaban tidak dapat diubah kembali."
+        confirmText="Submit & Nilai"
         cancelText="Batal"
-        loading={running}
+        loading={assessing}
         onClose={() => setShowSubmitModal(false)}
         onConfirm={handleSubmit}
       />

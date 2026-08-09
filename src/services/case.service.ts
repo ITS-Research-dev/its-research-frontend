@@ -1,6 +1,53 @@
 import { ROUTES } from "@/constants/routes";
 import api from "@/lib/api";
+import { Scoring } from "@/types/profile";
+import { CompetencyScore } from "@/types/asessment";
 import { CaseDetail, CaseItem, RunCodePayload, RunCodeResponse } from "@/types/case";
+
+/* ================================
+ * Types
+ * ================================ */
+
+export interface SubmitCasePayload {
+  soal: string;
+  expectedOutput: string;
+  studentCode: string;
+  hintUsage: number;
+}
+
+export interface SubmitCaseResponse {
+  aiScore: Scoring;
+  overallScore: number;
+  flagOverride: boolean;
+  aiSuggestion: string;
+  aiFinishTime: string;
+  hintUsage: number;
+  level: string;
+}
+
+/* ================================
+ * Helpers
+ * ================================ */
+
+const COMPETENCY_LABEL_MAP: Record<keyof Scoring, string> = {
+  fungsionalitas: "Fungsionalitas",
+  logika: "Logika",
+  syntax: "Syntax",
+  code_style: "Code Style",
+  dokumentasi: "Dokumentasi",
+  konsep: "Konsep",
+};
+
+export function mapScoringToCompetencies(aiScore: Scoring): CompetencyScore[] {
+  return (Object.keys(aiScore) as (keyof Scoring)[]).map((key) => ({
+    name: COMPETENCY_LABEL_MAP[key] ?? key,
+    score: aiScore[key],
+  }));
+}
+
+/* ================================
+ * Service
+ * ================================ */
 
 class CaseService {
   async getCases(): Promise<CaseItem[]> {
@@ -20,42 +67,12 @@ class CaseService {
     return response.data;
   }
 
-  async submitCase() {
-    return Promise.resolve({
-      score: 88,
-
-      level: "Expert",
-
-      feedback:
-        "Kode berhasil dijalankan. Struktur algoritma sudah baik, namun dokumentasi dan efisiensi masih dapat ditingkatkan.",
-
-      competencies: [
-        {
-          name: "Problem Solving",
-          score: 10,
-        },
-        {
-          name: "Algoritma",
-          score: 88,
-        },
-        {
-          name: "Syntax",
-          score: 92,
-        },
-        {
-          name: "Debugging",
-          score: 86,
-        },
-        {
-          name: "Efisiensi",
-          score: 84,
-        },
-        {
-          name: "Code Quality",
-          score: 91,
-        },
-      ],
-    });
+  async submitCase(payload: SubmitCasePayload): Promise<SubmitCaseResponse> {
+    const response = await api.post<SubmitCaseResponse>(
+      ROUTES.API.STUDENT.SUBMIT_CASE,
+      payload,
+    );
+    return response.data;
   }
 }
 
