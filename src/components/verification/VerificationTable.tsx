@@ -10,12 +10,14 @@ import { Eye, Search } from "lucide-react";
 
 import { VerificationDetail, VerificationItem } from "@/types/verification";
 
+import { ReviewPayload } from "@/services/verification.service";
 import ReviewModal from "./ReviewModal";
 import VerificationDetailModal from "./VerificationDetailModal";
 
 interface Props {
   data: VerificationItem[];
   details: VerificationDetail[];
+  onReviewSubmit?: (id: string, payload: ReviewPayload) => Promise<void>;
 }
 
 const statusItems: DropdownItem[] = [
@@ -43,7 +45,11 @@ function statusVariant(status: string) {
 
 const PAGE_SIZE = 10;
 
-export default function VerificationTable({ data, details }: Props) {
+export default function VerificationTable({
+  data,
+  details,
+  onReviewSubmit,
+}: Props) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
@@ -160,13 +166,14 @@ export default function VerificationTable({ data, details }: Props) {
         onClose={() => {
           setSelectedReview(undefined);
         }}
-        onSave={(id, scores, teacherNote) => {
-          console.log("Save review:", {
-            id,
-            scores,
-            teacherNote,
-          });
-
+        onSave={async (id, scores, teacherNote, decision) => {
+          if (onReviewSubmit) {
+            await onReviewSubmit(id, {
+              decision,
+              scores,
+              teacherNote,
+            });
+          }
           setSelectedReview(undefined);
         }}
       />

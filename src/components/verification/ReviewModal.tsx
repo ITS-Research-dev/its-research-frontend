@@ -18,6 +18,7 @@ interface Props {
     id: string,
     scores: Record<string, number>,
     teacherNote: string,
+    decision: "terima" | "koreksi",
   ) => void;
 }
 
@@ -92,7 +93,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
     setConfirmLoading(true);
 
     if (confirmAction === "save") {
-      onSave?.(data.id, scores, teacherNote);
+      onSave?.(data.id, scores, teacherNote, "koreksi");
     }
 
     if (confirmAction === "accept-ai") {
@@ -104,7 +105,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
       setScores(aiScores);
 
-      onSave?.(data.id, aiScores, "Sesuai, skor AI diterima langsung.");
+      onSave?.(data.id, aiScores, "Sesuai, skor AI diterima langsung.", "terima");
     }
 
     setConfirmLoading(false);
