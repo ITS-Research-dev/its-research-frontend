@@ -9,7 +9,10 @@ export const ROUTES = {
       STUDY_CASE: "/siswa/study-case",
       RUN_CODE: "/siswa/study-case/run",
       SUBMIT_CASE: "/siswa/test/ai/assess",
-    }
+    },
+    TEACHER: {
+      VERIFICATION: "/teacher/verifications",
+    },
   },
 
   LOGIN_PAGE: "/auth/login",
