@@ -6,6 +6,9 @@ export const ROUTES = {
     STUDENT: {
       MATERI: "/siswa/materi",
       PROFILE: "/siswa/profile",
+      STUDY_CASE: "/siswa/study-case",
+      RUN_CODE: "/siswa/study-case/run",
+      SUBMIT_CASE: "/siswa/test/ai/assess",
     }
   },
 
