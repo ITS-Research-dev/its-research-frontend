@@ -33,8 +33,8 @@ export default function DashboardSummary({
         <AIEfficiencyCard data={efficiency} />
       </div>
 
-      {/* <CompetencyTrendChart entries={[]} topics={[]}/> */}
-      {/* <LevelTrendChart entries={[]} topics={[]} /> */}
+      <CompetencyTrendChart entries={[]} topics={[]} />
+      <LevelTrendChart entries={[]} topics={[]} />
     </div>
   );
 }

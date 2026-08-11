@@ -105,7 +105,12 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
       setScores(aiScores);
 
-      onSave?.(data.id, aiScores, "Sesuai, skor AI diterima langsung.", "terima");
+      onSave?.(
+        data.id,
+        aiScores,
+        "Sesuai, skor AI diterima langsung.",
+        "terima",
+      );
     }
 
     setConfirmLoading(false);
@@ -163,7 +168,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="text-sm font-semibold text-text transition hover:text-primary"
+              className="text-5xl font-semibold text-text transition hover:text-primary"
             >
               ×
             </button>

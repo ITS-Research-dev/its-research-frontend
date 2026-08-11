@@ -52,14 +52,14 @@ export default function MonacoEditor({
 
     registerPythonLanguage(monaco);
 
-    monaco.editor.setTheme("vs-dark");
+    monaco.editor.setTheme("vs-white");
   };
 
   return (
     <Editor
       height="400px"
       language="python"
-      theme="vs-dark"
+      theme="vs-white"
       value={code}
       className={jetbrainsMono.className}
       onMount={handleMount}
