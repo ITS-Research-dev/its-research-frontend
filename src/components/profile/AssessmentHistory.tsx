@@ -12,24 +12,38 @@ import { Eye } from "lucide-react";
 import { ProfileResponse } from "@/types/profile";
 
 interface Props {
-  data: ProfileResponse[],
-  topics: string[]
+  data: ProfileResponse[];
+  topics: string[];
+
+  /**
+   * Base URL untuk halaman detail asesmen.
+   *
+   * Student:
+   * /student/profile/history
+   *
+   * Teacher:
+   * /teacher/monitoring/1/assessment
+   */
+  detailBaseHref?: string;
 }
 
 function levelVariant(level: string) {
   switch (level) {
     case "Competent":
       return "success";
+
     case "Expert":
       return "success";
 
-    case "Advance/Beginner":
+    case "Advance":
       return "primary";
+
     case "Advance/Beginner":
       return "primary";
 
-    case "Nocice":
+    case "Novice":
       return "warning";
+
     case "Beginner":
       return "warning";
 
@@ -38,66 +52,86 @@ function levelVariant(level: string) {
   }
 }
 
-function formatRawTopics(topics: string[]) : DropdownItem[] {
-    return [
-      {
-        label: "Semua Topik",
-        value: "all",
-      },
-      ...topics.map((topicName) => ({
-        label: topicName,
-        value: topicName,
-      })),
-    ];
+function formatRawTopics(topics: string[]): DropdownItem[] {
+  return [
+    {
+      label: "Semua Topik",
+      value: "all",
+    },
+
+    ...topics.map((topicName) => ({
+      label: topicName,
+      value: topicName,
+    })),
+  ];
 }
 
-export default function AssessmentHistory({ data, topics }: Props) {
+export default function AssessmentHistory({
+  data,
+  topics,
+  detailBaseHref,
+}: Props) {
   const [search, setSearch] = useState("");
   const [topic, setTopic] = useState("all");
   const [page, setPage] = useState(1);
+
   const pageSize = 10;
 
   const filtered = useMemo(() => {
     return data.filter((item) => {
       const keyword = search.toLowerCase();
-      
+
       const matchKeyword =
         item.test.title.toLowerCase().includes(keyword) ||
         item.test.topic.title.toLowerCase().includes(keyword);
 
-        const matchTopic = topic === "all" || item.test.topic.title === topic;
-        
-        return matchKeyword && matchTopic;
-      });
+      const matchTopic = topic === "all" || item.test.topic.title === topic;
+
+      return matchKeyword && matchTopic;
+    });
   }, [data, search, topic]);
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   const columns = [
     {
       header: "Topik",
+
       render: (item: ProfileResponse) => item.test.topic.title,
     },
+
     {
       header: "Soal",
+
       render: (item: ProfileResponse) => item.test.title,
     },
+
     {
       header: "Level",
+
       render: (item: ProfileResponse) => (
         <Badge variant={levelVariant(item.level)}>{item.level}</Badge>
       ),
     },
+
     {
       header: "Aksi",
-      render: (item: ProfileResponse) => (
-        <Link href={`/student/profile/history/${item.id}`}>
-          <Button variant="outline" size="sm" startIcon={<Eye size={16} />}>
-            Detail
-          </Button>
-        </Link>
-      ),
+
+      render: (item: ProfileResponse) => {
+        const href = detailBaseHref
+          ? `${detailBaseHref}/${item.id}`
+          : `/student/profile/history/${item.id}`;
+
+        return (
+          <Link href={href}>
+            <Button variant="outline" size="sm" startIcon={<Eye size={16} />}>
+              Detail
+            </Button>
+          </Link>
+        );
+      },
     },
   ];
 

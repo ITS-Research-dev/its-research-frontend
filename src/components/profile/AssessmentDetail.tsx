@@ -11,10 +11,21 @@ import Loading from "@/components/common/Loading";
 import AssessmentSummary from "./AssessmentSummary";
 import FeedbackCard from "./FeedbackCard";
 import CompetencySection from "./CompetencySection";
+
 import { useAssessmentDetail } from "@/hooks/useAssessment";
+import { AssessmentDetail as AssessmentDetailType } from "@/types/asessment";
 
 interface Props {
   id: string;
+
+  /**
+   * Digunakan ketika halaman ingin memberikan
+   * data secara langsung, misalnya data dummy.
+   */
+  initialDetail?: AssessmentDetailType;
+
+  backHref?: string;
+  backLabel?: string;
 }
 
 function levelVariant(level: string) {
@@ -22,21 +33,50 @@ function levelVariant(level: string) {
     case "Proficient":
       return "success";
 
+    case "Expert":
+      return "success";
+
     case "Competent":
+      return "primary";
+
+    case "Advance":
+      return "primary";
+
+    case "Advance/Beginner":
       return "primary";
 
     case "Beginner":
       return "warning";
+
+    case "Novice":
+      return "danger";
 
     default:
       return "danger";
   }
 }
 
-export default function AssessmentDetail({ id }: Props) {
-  const { detail, loading } = useAssessmentDetail(id);
+export default function AssessmentDetail({
+  id,
+  initialDetail,
+  backHref = "/student/profile",
+  backLabel = "Kembali ke Profil",
+}: Props) {
+  /**
+   * Jika initialDetail diberikan,
+   * tidak perlu memanggil API.
+   *
+   * Ini digunakan oleh Teacher Monitoring
+   * karena sementara masih menggunakan dummy data.
+   */
+  const { detail: apiDetail, loading } = useAssessmentDetail(
+    id,
+    !initialDetail,
+  );
 
-  if (loading) {
+  const detail = initialDetail ?? apiDetail;
+
+  if (!initialDetail && loading) {
     return <Loading open={true} text="Memuat detail asesmen..." />;
   }
 
@@ -53,7 +93,7 @@ export default function AssessmentDetail({ id }: Props) {
   return (
     <div className="space-y-8">
       <Link
-        href="/student/profile"
+        href={backHref}
         className="
           inline-flex
           items-center
@@ -66,7 +106,8 @@ export default function AssessmentDetail({ id }: Props) {
         "
       >
         <ArrowLeft size={18} />
-        Kembali ke Profil
+
+        {backLabel}
       </Link>
 
       <div>

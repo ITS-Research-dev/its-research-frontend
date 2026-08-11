@@ -6,7 +6,7 @@ export const assessmentHistories: AssessmentHistoryItem[] = [
     topic: "Variabel & Tipe Data",
     title: "Deklarasi Variabel Python",
     score: 95,
-    level: "Proficient",
+    level: "Expert",
   },
   {
     id: "2",
@@ -34,7 +34,7 @@ export const assessmentDetails: AssessmentDetail[] = [
 
     score: 95,
 
-  level: "Proficient",
+  level: "Expert",
 
     hintsUsed: 1,
 
@@ -232,3 +232,11 @@ while i < len(buah):
     ],
   },
 ];
+
+export function getDummyAssessmentDetail(assessmentId: string): AssessmentDetail {
+  const normalizedId = assessmentId.replace("assessment-", "");
+  const found = assessmentDetails.find(
+    (item) => item.id === assessmentId || item.id === normalizedId
+  );
+  return found || assessmentDetails[0];
+}
