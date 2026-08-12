@@ -33,7 +33,7 @@ const THRESHOLDS: { level: AssessmentLevel; min: number, color: string }[] = [
 ];
 
 interface Props {
-  entries: { [key: string]: { [key: string]: RawGraphProfile } };
+  entries: { [key: string]: { [key: string]: RawGraphProfile } } | [];
   topics: string[];
 }
 
@@ -138,6 +138,7 @@ export default function LevelTrendChart({entries, topics }: Props) {
   const [topic, setTopic] = useState("all");
 
  const data = useMemo(() => {
+     if (Array.isArray(entries)) return [];
      return formatEntries(entries, period, topic);
    }, [period, topic, entries]);
  
