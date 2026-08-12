@@ -12,12 +12,14 @@ export const ROUTES = {
     },
     TEACHER: {
       VERIFICATION: "/teacher/verifications",
+      DASHBOARD: "/teacher/dashboard",
+      DASHBOARD_TREND: "/teacher/dashboard/trend",
     },
   },
 
   LOGIN_PAGE: "/auth/login",
 
-  STUDENT_DASHBOARD: "/student/materials",
+STUDENT_DASHBOARD: "/student/materials",
 
   TEACHER_DASHBOARD: "/teacher/dashboard",
 };

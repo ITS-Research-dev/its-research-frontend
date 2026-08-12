@@ -115,9 +115,7 @@ export default function CompetencyTrendChart({ entries, topics }: Props) {
 
   const trend = getTrendInfo(data)
 
-return data.length < 1 ? (
-  <TableLoading />
-) : (
+return (
   <Card className="p-7">
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
       <div>

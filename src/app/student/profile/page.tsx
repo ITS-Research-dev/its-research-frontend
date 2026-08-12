@@ -14,6 +14,7 @@ import { useProfileSummary } from "@/hooks/useProfile";
 
 export default function ProfilePage() {
   const { summary, loading } = useProfileSummary();
+  console.log(summary?.competencyTrend)
 
   if (loading || !summary) {
     return <Loading open={true} text="Memuat profil..." />;

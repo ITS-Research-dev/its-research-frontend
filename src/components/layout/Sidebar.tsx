@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,37 +12,24 @@ import { teacherMenu } from "@/components/navigation/teacherMenu";
 import { studentMenu } from "@/components/navigation/studentMenu";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useClassStore } from "@/store/class.store";
+import { DropdownItem } from "../common/DataTable";
+import { storage } from "@/utils/storage";
 
 interface SidebarProps {
   role: "teacher" | "student";
 }
-
-// Dummy data (nanti dari API)
-const dummyClasses = [
-  {
-    label: "XII RPL 1",
-    value: "1",
-  },
-  {
-    label: "XII RPL 2",
-    value: "2",
-  },
-  {
-    label: "XII RPL 3",
-    value: "3",
-  },
-];
 
 export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
 
   const { logout } = useAuth();
 
-  const [selectedClass, setSelectedClass] = useState(dummyClasses[0].value);
-
   const [openLogout, setOpenLogout] = useState(false);
 
   const [loading, setLoading] = useState(false);
+
+  const [classes, setClasses] = useState<DropdownItem[]>([]);
 
   const menu = role === "teacher" ? teacherMenu : studentMenu;
 
@@ -52,19 +39,21 @@ export default function Sidebar({ role }: SidebarProps) {
 
   const LogoutIcon = logoutMenu?.icon;
 
+  const { selectedClassId, setSelectedClassId } = useClassStore();
+
   const handleLogout = async () => {
+    setOpenLogout(false);
+    setLoading(true);
     try {
-      setLoading(true);
-
-      // supaya loading terlihat
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
       await logout();
     } finally {
       setLoading(false);
-      setOpenLogout(false);
     }
   };
+
+   useEffect(() => {
+    setClasses(storage.getClass());
+  }, []);
 
   return (
     <>
@@ -77,14 +66,14 @@ export default function Sidebar({ role }: SidebarProps) {
         {/* Dropdown */}
         {role === "teacher" && (
           <div className="border-b border-border p-4">
-            <Dropdown
-              label="Pilih Kelas"
-              placeholder="Pilih kelas"
-              value={selectedClass}
-              onChange={setSelectedClass}
-              items={dummyClasses}
-            />
-          </div>
+          <Dropdown
+            label="Pilih Kelas"
+            placeholder="Pilih kelas"
+            value={selectedClassId}
+            onChange={setSelectedClassId}
+            items={classes}
+          />
+        </div>
         )}
 
         {/* Menu */}
@@ -155,16 +144,7 @@ export default function Sidebar({ role }: SidebarProps) {
         confirmText="Logout"
         cancelText="Batal"
         onClose={() => setOpenLogout(false)}
-        onConfirm={async () => {
-          setOpenLogout(false);
-          setLoading(true);
-
-          try {
-            await logout();
-          } finally {
-            setLoading(false);
-          }
-        }}
+        onConfirm={() => handleLogout()}
       />
 
       {/* Loading */}

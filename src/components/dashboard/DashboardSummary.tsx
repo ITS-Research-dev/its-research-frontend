@@ -4,25 +4,27 @@ import {
   TeacherDashboardSummary,
   TopicScore,
   AIEfficiency,
+  DashboardTrendResponse,
 } from "@/types/dashboard";
 
 import DashboardStats from "./DashboardStats";
 import TopicScoreDistribution from "./TopicScoreDistribution";
 import AIEfficiencyCard from "./AIEfficiencyCard";
-
-import CompetencyTrendChart from "@/components/profile/CompetencyTrendChart";
-import LevelTrendChart from "@/components/profile/LevelTrendChart";
+import CompetencyTrendChart from "../profile/CompetencyTrendChart";
+import LevelTrendChart from "../profile/LevelTrendChart";
 
 interface Props {
   summary: TeacherDashboardSummary;
   topicScores: TopicScore[];
   efficiency: AIEfficiency;
+  trend: DashboardTrendResponse;
 }
 
 export default function DashboardSummary({
   summary,
   topicScores,
   efficiency,
+  trend
 }: Props) {
   return (
     <div className="space-y-6">
@@ -33,8 +35,9 @@ export default function DashboardSummary({
         <AIEfficiencyCard data={efficiency} />
       </div>
 
-      {/* <CompetencyTrendChart entries={[]} topics={[]}/> */}
-      {/* <LevelTrendChart entries={[]} topics={[]} /> */}
+      <CompetencyTrendChart entries={trend?.competencyTrend} topics={trend?.nameMaterials}/>
+      <LevelTrendChart entries={trend?.levelTrend} topics={trend?.nameMaterials} />
+
     </div>
   );
 }

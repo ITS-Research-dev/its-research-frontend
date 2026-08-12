@@ -8,9 +8,9 @@ import DashboardSummary from "@/components/dashboard/DashboardSummary";
 import { useDashboard } from "@/hooks/useDashboard";
 
 export default function TeacherDashboardPage() {
-  const { summary, topicScores, efficiency, loading } = useDashboard();
+  const { summary, trend, topicScores, efficiency, loading } = useDashboard();
 
-  if (loading || !summary || !efficiency) {
+  if (loading || !summary || !efficiency || !trend) {
     return <Loading open={loading} />;
   }
 
@@ -25,6 +25,7 @@ export default function TeacherDashboardPage() {
         summary={summary}
         topicScores={topicScores}
         efficiency={efficiency}
+        trend={trend}
       />
     </div>
   );

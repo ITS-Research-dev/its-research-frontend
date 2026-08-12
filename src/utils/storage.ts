@@ -1,3 +1,5 @@
+import { DropdownItem } from "@/components/common/DataTable";
+import { User } from "@/types/auth";
 import Cookies from "js-cookie";
 
 const TOKEN_KEY = "access_token";
@@ -23,14 +25,25 @@ export const storage = {
     Cookies.remove(TOKEN_KEY);
   },
 
-  saveUser(user: unknown) {
+  saveUser(user: User) {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   },
 
-  getUser() {
+  getUser(): User | null {
     const user = localStorage.getItem(USER_KEY);
 
     return user ? JSON.parse(user) : null;
+  },
+
+  getClass(): DropdownItem[] {
+    const user = this.getUser();
+
+    if (!user || !user.classId) return [];
+
+    return user.classId.map((c) => ({
+      value: c.class.id,
+      label: c.class.title,
+    }));
   },
 
   removeUser() {
@@ -39,7 +52,6 @@ export const storage = {
 
   clear() {
     this.removeToken();
-
     this.removeUser();
   },
 };

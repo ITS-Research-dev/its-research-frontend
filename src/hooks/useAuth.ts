@@ -7,11 +7,13 @@ import { useAuthStore } from "@/store/auth.store";
 import { ROUTES } from "@/constants/routes";
 import { ROLES } from "@/constants/roles";
 import { LoginRequest } from "@/types/auth";
+import { useClassStore } from "@/store/class.store";
 
 export function useAuth() {
   const router = useRouter();
 
   const { setToken, setUser, logout: clearStore } = useAuthStore();
+  const { selectedClassId, setSelectedClassId } = useClassStore();
 
   const login = async (payload: LoginRequest) => {
     const response = await AuthService.login(payload);
@@ -25,6 +27,7 @@ export function useAuth() {
     setUser(response.user);
 
     if (response.user.role === ROLES.TEACHER) {
+      setSelectedClassId(storage.getClass()[0].value);
       router.replace(ROUTES.TEACHER_DASHBOARD);
     } else {
       router.replace(ROUTES.STUDENT_DASHBOARD);
@@ -38,6 +41,7 @@ export function useAuth() {
       // await AuthService.logout();
     } finally {
       storage.clear();
+      setSelectedClassId("")
 
       clearStore();
 
