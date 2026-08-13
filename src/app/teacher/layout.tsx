@@ -8,6 +8,7 @@ import Topbar from "@/components/layout/Topbar";
 
 import { storage } from "@/utils/storage";
 import { ROUTES } from "@/constants/routes";
+import { useAuthStore } from "@/store/auth.store";
 
 interface TeacherLayoutProps {
   children: React.ReactNode;
@@ -19,9 +20,13 @@ export default function TeacherLayout({ children }: TeacherLayoutProps) {
   useEffect(() => {
     const checkAuth = () => {
       const token = storage.getToken();
+      const user = storage.getUser();
 
       if (!token) {
         router.replace(ROUTES.LOGIN_PAGE);
+      } else {
+        useAuthStore.getState().setUser(user);
+        useAuthStore.getState().setToken(token);
       }
     };
 

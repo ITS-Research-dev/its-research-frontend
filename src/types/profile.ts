@@ -33,6 +33,7 @@ export interface ProfileSummary {
   raw: ProfileResponse[];
 }
 export interface Scoring {
+  [key: string]: number;
   fungsionalitas: number;
   logika: number;
   syntax: number;
@@ -49,6 +50,9 @@ export interface ProfileResponse {
   hintUsage: number;
   aiScore: Scoring;
   teacherScore: Scoring;
+  aiSuggestion?: string | null;
+  teacherSuggestion?: string | null;
+  flagOverride?: boolean;
   test: {
     title: string;
     topic: { title: string };

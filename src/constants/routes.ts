@@ -14,6 +14,11 @@ export const ROUTES = {
       VERIFICATION: "/teacher/verifications",
       DASHBOARD: "/teacher/dashboard",
       DASHBOARD_TREND: "/teacher/dashboard/trend",
+      MONITORING_CLASSES: "/teacher/monitoring/classes",
+      MONITORING_CLASS: (className: string) =>
+        `/teacher/monitoring/classes/${encodeURIComponent(className)}`,
+      MONITORING_STUDENT: (className: string, studentId: string) =>
+        `/teacher/monitoring/classes/${encodeURIComponent(className)}/students/${studentId}`,
     },
   },
 
