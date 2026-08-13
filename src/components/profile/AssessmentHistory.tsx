@@ -25,6 +25,13 @@ interface Props {
    * /teacher/monitoring/1/assessment
    */
   detailBaseHref?: string;
+
+  /**
+   * Jika diberikan, tombol Detail akan memanggil callback ini
+   * (modal) alih-alih navigasi ke halaman baru.
+   * Digunakan di konteks monitoring guru.
+   */
+  onDetail?: (item: ProfileResponse) => void;
 }
 
 function levelVariant(level: string) {
@@ -70,6 +77,7 @@ export default function AssessmentHistory({
   data,
   topics,
   detailBaseHref,
+  onDetail,
 }: Props) {
   const [search, setSearch] = useState("");
   const [topic, setTopic] = useState("all");
@@ -120,6 +128,19 @@ export default function AssessmentHistory({
       header: "Aksi",
 
       render: (item: ProfileResponse) => {
+        if (onDetail) {
+          return (
+            <Button
+              variant="outline"
+              size="sm"
+              startIcon={<Eye size={16} />}
+              onClick={() => onDetail(item)}
+            >
+              Detail
+            </Button>
+          );
+        }
+
         const href = detailBaseHref
           ? `${detailBaseHref}/${item.id}`
           : `/student/profile/history/${item.id}`;
