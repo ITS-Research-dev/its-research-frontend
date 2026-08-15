@@ -10,7 +10,7 @@ import SearchInput from "./SearchInput";
 import EmptyState from "./EmptyState";
 import TableLoading from "./TableLoading";
 
-interface Column<T> {
+export interface Column<T> {
   header: string;
 
   render: (row: T) => ReactNode;

@@ -13,8 +13,8 @@ export const teacherMenu = [
     icon: LayoutDashboard,
   },
   {
-    title: "Bank Materi",
-    href: "/teacher/materials",
+    title: "Bank Materi & Soal",
+    href: "/teacher/bank",
     icon: BookOpen,
   },
   {
