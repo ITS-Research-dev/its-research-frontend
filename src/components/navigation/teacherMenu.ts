@@ -14,7 +14,7 @@ export const teacherMenu = [
   },
   {
     title: "Bank Materi",
-    href: "/teacher/materials",
+    href: "/teacher/bank",
     icon: BookOpen,
   },
   {
