@@ -13,7 +13,7 @@ export const teacherMenu = [
     icon: LayoutDashboard,
   },
   {
-    title: "Bank Materi",
+    title: "Bank Materi & Soal",
     href: "/teacher/bank",
     icon: BookOpen,
   },
