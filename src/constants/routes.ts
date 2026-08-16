@@ -14,6 +14,8 @@ export const ROUTES = {
       VERIFICATION: "/teacher/verifications",
       DASHBOARD: "/teacher/dashboard",
       DASHBOARD_TREND: "/teacher/dashboard/trend",
+      BANK_MATERI: "/teacher/bank/materials",
+      BANK_SOAL: "/teacher/bank/questions",
       MONITORING_CLASSES: "/teacher/monitoring/classes",
       MONITORING_CLASS: (className: string) =>
         `/teacher/monitoring/classes/${encodeURIComponent(className)}`,

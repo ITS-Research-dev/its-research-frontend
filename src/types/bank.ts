@@ -25,7 +25,12 @@ export interface BankQuestion {
   status: BankStatus;
 }
 
+export interface TopicDropdown {
+  id: string;
+  title: string;
+}
 export interface BankData {
+  topics: TopicDropdown[];
   materials: BankMaterial[];
   questions: BankQuestion[];
 }

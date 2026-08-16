@@ -21,14 +21,13 @@ import QuestionFormModal, {
   QuestionFormData,
 } from "@/components/bank/QuestionFormModal";
 
-import { bankData } from "@/data/bank";
-
 import { BankMaterial, BankQuestion } from "@/types/bank";
-
+import { useBank } from "@/hooks/useBank";
+import Loading from "@/components/common/Loading";
+import bankService from "@/services/bank.service";
+import { useClassStore } from "@/store/class.store";
 type Tab = "material" | "question" | "reference";
-
 type FormMode = "create" | "edit";
-
 type ConfirmType = "material" | "question" | null;
 
 export default function TeacherBankPage() {
@@ -41,14 +40,7 @@ export default function TeacherBankPage() {
   /* =====================================================
      DATA
   ===================================================== */
-
-  const [materials, setMaterials] = useState<BankMaterial[]>(
-    bankData.materials,
-  );
-
-  const [questions, setQuestions] = useState<BankQuestion[]>(
-    bankData.questions,
-  );
+  const { materials, questions, loading, reload } = useBank();
 
   /* =====================================================
      MATERIAL FORM
@@ -57,6 +49,7 @@ export default function TeacherBankPage() {
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
 
   const [materialMode, setMaterialMode] = useState<FormMode>("create");
+  const selectedClassId = useClassStore((s) => s.selectedClassId);
 
   const [selectedMaterial, setSelectedMaterial] = useState<
     BankMaterial | undefined
@@ -108,22 +101,16 @@ export default function TeacherBankPage() {
     setMaterialModalOpen(true);
   };
 
-  const handleEditMaterial = (material: BankMaterial) => {
+  const handleEditMaterial = async (material: BankMaterial) => {
     setSelectedMaterial(material);
     setMaterialMode("edit");
     setMaterialModalOpen(true);
   };
 
-  const handleMaterialSubmit = (data: MaterialFormData) => {
-    /*
-     * Jangan langsung menyimpan data.
-     * Simpan sementara terlebih dahulu.
-     */
-    setPendingMaterial(data);
-
-    setConfirmType("material");
-
+  const handleMaterialSubmit = async (data: MaterialFormData) => {
     setConfirmOpen(true);
+    setMaterialModalOpen(false);
+    setPendingMaterial(null);
   };
 
   /* =====================================================
@@ -136,21 +123,15 @@ export default function TeacherBankPage() {
     setQuestionModalOpen(true);
   };
 
-  const handleEditQuestion = (question: BankQuestion) => {
+  const handleEditQuestion = async (question: BankQuestion) => {
     setSelectedQuestion(question);
     setQuestionMode("edit");
     setQuestionModalOpen(true);
   };
 
-  const handleQuestionSubmit = (data: QuestionFormData) => {
-    /*
-     * Jangan langsung menyimpan data.
-     * Simpan sementara terlebih dahulu.
-     */
+  const handleQuestionSubmit = async (data: QuestionFormData) => {
     setPendingQuestion(data);
-
     setConfirmType("question");
-
     setConfirmOpen(true);
   };
 
@@ -158,7 +139,7 @@ export default function TeacherBankPage() {
      CONFIRM SAVE
   ===================================================== */
 
-  const handleConfirmSave = () => {
+  const handleConfirmSave = async () => {
     /*
      * ============================
      * MATERIAL
@@ -168,47 +149,11 @@ export default function TeacherBankPage() {
     if (confirmType === "material" && pendingMaterial) {
       const data = pendingMaterial;
 
-      if (materialMode === "create") {
-        const newMaterial: BankMaterial = {
-          id: `material-${Date.now()}`,
-          title: data.title,
-          description: data.description,
-          content: data.content,
-          startDate: data.startDate,
-          status: data.status,
-        };
-
-        setMaterials((prev) => [...prev, newMaterial]);
-
-        setSuccessTitle("Materi Berhasil Ditambahkan");
-
-        setSuccessDescription(
-          "Materi baru berhasil ditambahkan ke bank materi.",
-        );
-      } else if (materialMode === "edit" && selectedMaterial) {
-        setMaterials((prev) =>
-          prev.map((item) =>
-            item.id === selectedMaterial.id
-              ? {
-                  ...item,
-                  title: data.title,
-                  description: data.description,
-                  content: data.content,
-                  startDate: data.startDate,
-                  status: data.status,
-                }
-              : item,
-          ),
-        );
-
-        setSuccessTitle("Materi Berhasil Diperbarui");
-
-        setSuccessDescription("Perubahan materi berhasil disimpan.");
+      if (materialMode == "edit" && selectedMaterial?.id) {
+        await bankService.editMaterial(selectedMaterial.id, data);
+      } else {
+        await bankService.createMaterial(selectedClassId, data);
       }
-
-      /*
-       * Bersihkan state pending.
-       */
 
       setPendingMaterial(null);
       setConfirmType(null);
@@ -237,62 +182,15 @@ export default function TeacherBankPage() {
 
     if (confirmType === "question" && pendingQuestion) {
       const data = pendingQuestion;
-
-      const material = materials.find((item) => item.id === data.materialId);
-
-      if (questionMode === "create") {
-        const newQuestion: BankQuestion = {
-          id: `question-${Date.now()}`,
-          title: data.title,
-          description: data.description,
-          expectedOutput: data.expectedOutput,
-          hint1: data.hint1,
-          hint2: data.hint2,
-          hint3: data.hint3,
-          materialId: data.materialId,
-          topic: {
-            id: data.materialId,
-            title: material?.title ?? "Materi",
-          },
-          status: data.status,
-        };
-
-        setQuestions((prev) => [...prev, newQuestion]);
-
+      if (materialMode == "edit" && selectedQuestion?.id) {
+        await bankService.editQuestion(selectedQuestion.id, data);
         setSuccessTitle("Soal Berhasil Ditambahkan");
-
-        setSuccessDescription("Soal baru berhasil ditambahkan ke bank soal.");
-      } else if (questionMode === "edit" && selectedQuestion) {
-        setQuestions((prev) =>
-          prev.map((item) =>
-            item.id === selectedQuestion.id
-              ? {
-                  ...item,
-                  title: data.title,
-                  description: data.description,
-                  expectedOutput: data.expectedOutput,
-                  hint1: data.hint1,
-                  hint2: data.hint2,
-                  hint3: data.hint3,
-                  materialId: data.materialId,
-                  topic: {
-                    id: data.materialId,
-                    title: material?.title ?? item.topic.title,
-                  },
-                  status: data.status,
-                }
-              : item,
-          ),
-        );
-
+      } else {
+        await bankService.createQuestion(data);
         setSuccessTitle("Soal Berhasil Diperbarui");
-
+  
         setSuccessDescription("Perubahan soal berhasil disimpan.");
       }
-
-      /*
-       * Bersihkan state pending.
-       */
 
       setPendingQuestion(null);
       setConfirmType(null);
@@ -310,6 +208,7 @@ export default function TeacherBankPage() {
 
       setSuccessOpen(true);
     }
+    reload()
   };
 
   /* =====================================================
@@ -345,6 +244,10 @@ export default function TeacherBankPage() {
   /* =====================================================
      RENDER
   ===================================================== */
+
+  if (loading) {
+    return <Loading open={loading} />;
+  }
 
   return (
     <div className="space-y-8">
