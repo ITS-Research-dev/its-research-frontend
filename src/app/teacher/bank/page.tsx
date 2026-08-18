@@ -108,9 +108,9 @@ export default function TeacherBankPage() {
   };
 
   const handleMaterialSubmit = async (data: MaterialFormData) => {
+    setPendingMaterial(data);
+    setConfirmType("material");
     setConfirmOpen(true);
-    setMaterialModalOpen(false);
-    setPendingMaterial(null);
   };
 
   /* =====================================================
@@ -151,8 +151,12 @@ export default function TeacherBankPage() {
 
       if (materialMode == "edit" && selectedMaterial?.id) {
         await bankService.editMaterial(selectedMaterial.id, data);
+        setSuccessTitle("Soal Berhasil Ditambahkan");
       } else {
         await bankService.createMaterial(selectedClassId, data);
+        setSuccessTitle("Soal Berhasil Diperbarui");
+
+        setSuccessDescription("Perubahan soal berhasil disimpan.");
       }
 
       setPendingMaterial(null);
@@ -170,8 +174,6 @@ export default function TeacherBankPage() {
        */
 
       setSuccessOpen(true);
-
-      return;
     }
 
     /*
@@ -188,7 +190,7 @@ export default function TeacherBankPage() {
       } else {
         await bankService.createQuestion(data);
         setSuccessTitle("Soal Berhasil Diperbarui");
-  
+
         setSuccessDescription("Perubahan soal berhasil disimpan.");
       }
 
@@ -208,7 +210,7 @@ export default function TeacherBankPage() {
 
       setSuccessOpen(true);
     }
-    reload()
+    reload();
   };
 
   /* =====================================================
