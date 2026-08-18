@@ -151,12 +151,12 @@ export default function TeacherBankPage() {
 
       if (materialMode == "edit" && selectedMaterial?.id) {
         await bankService.editMaterial(selectedMaterial.id, data);
-        setSuccessTitle("Soal Berhasil Ditambahkan");
+        setSuccessTitle("Materi Berhasil Ditambahkan");
       } else {
         await bankService.createMaterial(selectedClassId, data);
-        setSuccessTitle("Soal Berhasil Diperbarui");
+        setSuccessTitle("Materi berhasil Diperbarui");
 
-        setSuccessDescription("Perubahan soal berhasil disimpan.");
+        setSuccessDescription("Perubahan materi berhasil disimpan.");
       }
 
       setPendingMaterial(null);
