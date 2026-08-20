@@ -25,31 +25,40 @@ renderer.code = ({ text, lang }) => {
 };
 
 // blockquote jadi "tips box" bergaya, bukan quote biasa
-renderer.blockquote = ({ text }) => `
-  <div class="my-6 flex gap-3 rounded-lg border-l-4 border-primary bg-primary/5 p-4">
-    <span class="text-lg">💡</span>
-    <div class="text-sm text-slate-700 [&_p]:m-0">${text}</div>
-  </div>
-`;
+renderer.blockquote = ({ tokens }) => {
+  const innerHtml = marked.parser(tokens);
+  return `
+    <div class="my-6 flex gap-3 rounded-lg border-l-4 border-primary bg-primary/5 p-4">
+      <span class="text-lg">💡</span>
+      <div class="text-sm text-slate-700 [&_p]:m-0">${innerHtml}</div>
+    </div>
+  `;
+};
 
 // heading dengan anchor + spacing lebih lega
 renderer.heading = ({ tokens, depth }) => {
-  const text = tokens.map((t: any) => t.raw ?? t.text).join("");
-  const id = text.toLowerCase().replace(/[^\w]+/g, "-");
+  const html = marked.parseInline(tokens.map((t: any) => t.raw ?? t.text).join(""));
+  const plainText = tokens.map((t: any) => t.text ?? "").join("");
+  const id = plainText.toLowerCase().replace(/[^\w]+/g, "-");
   const sizes: Record<number, string> = {
     1: "text-3xl font-bold mt-2 mb-4",
     2: "text-2xl font-bold mt-10 mb-4 pb-2 border-b border-slate-200",
     3: "text-xl font-semibold mt-8 mb-3",
   };
-  return `<h${depth} id="${id}" class="${sizes[depth] ?? "text-lg font-semibold mt-6 mb-2"} text-slate-900 scroll-mt-24">${text}</h${depth}>`;
+  return `<h${depth} id="${id}" class="${sizes[depth] ?? "text-lg font-semibold mt-6 mb-2"} text-slate-900 scroll-mt-24">${html}</h${depth}>`;
 };
 
 marked.use({ renderer });
 
 export default function MarkdownContent({ content }: { content: string }) {
   const html = useMemo(() => {
-    const raw = marked.parse(content) as string;
-    return DOMPurify.sanitize(raw);
+    try {
+      const raw = marked.parse(content) as string;
+      return DOMPurify.sanitize(raw);
+    } catch (err) {
+      console.error("Markdown parse error:", err);
+      return `<p class="text-red-500">Gagal memuat konten materi.</p>`;
+    }
   }, [content]);
 
   return (

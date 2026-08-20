@@ -1,6 +1,6 @@
 "use client";
 
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 
 import { materials } from "@/data/materials";
 import Link from "next/link";
@@ -17,9 +17,10 @@ import MarkdownContent from "@/components/material/MarkdownContent";
 export default function MaterialDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { material, loading } = useMaterialDetail(id);
+  const router = useRouter();
 
   if (loading) return <Loading open={true} text="Memuat materi..." />;
-  if (!material) notFound()
+  if (!material) notFound();
 
   return (
     <div className="space-y-8">
@@ -39,7 +40,7 @@ export default function MaterialDetailPage() {
       <MaterialContent>
         <MarkdownContent content={material.subject}></MarkdownContent>
 
-        <MaterialFooter />
+        <MaterialFooter onNext={() => router.push(`/student/case/${id}`)} />
       </MaterialContent>
     </div>
   );
