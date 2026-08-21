@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import Card from "@/components/ui/Card";
 import { TopicScore } from "@/types/dashboard";
 
@@ -14,47 +16,89 @@ import {
   Cell,
 } from "recharts";
 
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Trophy } from "lucide-react";
 
 interface Props {
   data: TopicScore[];
 }
 
+type FilterType = "lowest" | "highest";
+
 export default function TopicScoreDistribution({ data }: Props) {
+  const [filter, setFilter] = useState<FilterType>("lowest");
+
+  const displayedData = useMemo(() => {
+    const sortedData = [...data].sort((a, b) => {
+      if (filter === "lowest") {
+        return a.score - b.score;
+      }
+
+      return b.score - a.score;
+    });
+
+    return sortedData.slice(0, 5);
+  }, [data, filter]);
+
   const getColor = (score: number) => {
     if (score < 60) return "#ef4444";
     if (score < 70) return "#f59e0b";
+
     return "#3b82f6";
   };
 
-  const weakestTopic = [...data].sort((a, b) => a.score - b.score)[0];
+  const weakestTopic = filter === "lowest" ? displayedData[0] : null;
 
-  const warningTopic = [...data]
-    .filter((item) => item.score >= 60 && item.score < 70)
-    .sort((a, b) => a.score - b.score)[0];
+  const strongestTopic = filter === "highest" ? displayedData[0] : null;
 
   return (
     <Card className="p-4">
-      <div>
-        <h2 className="text-xl font-bold text-text">
-          Distribusi Skor per Topik
-        </h2>
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-text">
+            Distribusi Skor per Topik
+          </h2>
 
-        <p className="mt-1 text-description">
-          Rata-rata nilai siswa pada setiap topik pembelajaran.
-        </p>
+          <p className="mt-1 text-description">
+            Rata-rata nilai siswa pada setiap topik pembelajaran.
+          </p>
+        </div>
+
+        {/* Filter Tab */}
+        <div className="flex rounded-xl border border-border bg-surface p-1">
+          <button
+            onClick={() => setFilter("lowest")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              filter === "lowest" ? "bg-primary text-white" : "text-description"
+            }`}
+          >
+            Terendah
+          </button>
+
+          <button
+            onClick={() => setFilter("highest")}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              filter === "highest"
+                ? "bg-primary text-white"
+                : "text-description"
+            }`}
+          >
+            Tertinggi
+          </button>
+        </div>
       </div>
 
       {/* Chart */}
       <div className="mt-8 h-90">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
+            data={displayedData}
             layout="vertical"
             margin={{
               top: 5,
-              right: 10,
+              right: 20,
               bottom: 5,
+              left: 10,
             }}
             barCategoryGap={20}
           >
@@ -65,17 +109,22 @@ export default function TopicScoreDistribution({ data }: Props) {
             <YAxis
               type="category"
               dataKey="topic"
-              width={120}
+              width={130}
               tick={{
-                fontSize: 13,
+                fontSize: 12,
                 fill: "#374151",
+              }}
+              tickLine={false}
+              axisLine={false}
+              style={{
+                textTransform: "capitalize",
               }}
             />
 
             <Tooltip />
 
             <Bar dataKey="score" radius={[0, 8, 8, 0]} barSize={30}>
-              {data.map((item) => (
+              {displayedData.map((item) => (
                 <Cell key={item.topic} fill={getColor(item.score)} />
               ))}
             </Bar>
@@ -83,32 +132,31 @@ export default function TopicScoreDistribution({ data }: Props) {
         </ResponsiveContainer>
       </div>
 
-      {/* Highlight */}
-      <div className="mt-6 space-y-3">
-        {weakestTopic && (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-red-600">
-            <AlertTriangle size={18} />
+      {/* Highlight 5 Terendah */}
+      {filter === "lowest" && weakestTopic && (
+        <div className="mt-6 flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3 text-red-600">
+          <AlertTriangle size={18} />
 
-            <p>
-              Topik lemah:{" "}
-              <span className="font-semibold">{weakestTopic.topic}</span>{" "}
-              (rata-rata {weakestTopic.score})
-            </p>
-          </div>
-        )}
+          <p>
+            Topik dengan skor terendah:{" "}
+            <span className="font-semibold">{weakestTopic.topic}</span> dengan
+            rata-rata skor {weakestTopic.score}.
+          </p>
+        </div>
+      )}
 
-        {warningTopic && (
-          <div className="flex items-center gap-3 rounded-xl bg-amber-50 px-4 py-3 text-amber-700">
-            <AlertTriangle size={18} />
+      {/* Highlight 5 Tertinggi */}
+      {filter === "highest" && strongestTopic && (
+        <div className="mt-6 flex items-center gap-3 rounded-xl bg-primary/10 px-4 py-3 text-primary">
+          <Trophy size={18} />
 
-            <p>
-              Perlu perhatian:{" "}
-              <span className="font-semibold">{warningTopic.topic}</span>{" "}
-              (rata-rata {warningTopic.score})
-            </p>
-          </div>
-        )}
-      </div>
+          <p>
+            Topik dengan skor tertinggi:{" "}
+            <span className="font-semibold">{strongestTopic.topic}</span> dengan
+            rata-rata skor {strongestTopic.score}.
+          </p>
+        </div>
+      )}
     </Card>
   );
 }
