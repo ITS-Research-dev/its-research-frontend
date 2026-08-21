@@ -41,6 +41,8 @@ const initialForm: QuestionFormData = {
   status: "active",
 };
 
+type FormErrors = Partial<Record<keyof QuestionFormData, string>>;
+
 export default function QuestionFormModal({
   open,
   mode,
@@ -51,6 +53,8 @@ export default function QuestionFormModal({
 }: Props) {
   const [form, setForm] = useState<QuestionFormData>(initialForm);
 
+  const [errors, setErrors] = useState<FormErrors>({});
+
   const materialItems = materials.map((material) => ({
     label: material.title,
     value: material.id,
@@ -58,6 +62,9 @@ export default function QuestionFormModal({
 
   useEffect(() => {
     if (!open) return;
+
+    // Reset error setiap modal dibuka
+    setErrors({});
 
     if (mode === "edit" && question) {
       setForm({
@@ -86,12 +93,51 @@ export default function QuestionFormModal({
       ...prev,
       [field]: value,
     }));
+
+    // Hapus error ketika field mulai diperbaiki
+    setErrors((prev) => ({
+      ...prev,
+      [field]: undefined,
+    }));
   };
 
   const handleSubmit = () => {
-    if (!form.materialId) return;
-    if (!form.title.trim()) return;
-    if (!form.description.trim()) return;
+    const newErrors: FormErrors = {};
+
+    if (!form.materialId) {
+      newErrors.materialId = "Topik materi wajib dipilih.";
+    }
+
+    if (!form.title.trim()) {
+      newErrors.title = "Judul soal wajib diisi.";
+    }
+
+    if (!form.description.trim()) {
+      newErrors.description = "Deskripsi soal wajib diisi.";
+    }
+
+    if (!form.expectedOutput.trim()) {
+      newErrors.expectedOutput = "Output yang diharapkan wajib diisi.";
+    }
+
+    if (!form.hint1.trim()) {
+      newErrors.hint1 = "Hint 1 wajib diisi.";
+    }
+
+    if (!form.hint2.trim()) {
+      newErrors.hint2 = "Hint 2 wajib diisi.";
+    }
+
+    if (!form.hint3.trim()) {
+      newErrors.hint3 = "Hint 3 wajib diisi.";
+    }
+
+    setErrors(newErrors);
+
+    // Jika masih ada error, jangan submit
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     onSubmit(form);
   };
@@ -114,8 +160,9 @@ export default function QuestionFormModal({
         </>
       }
     >
-      <div className="max-h-[65vh] space-y-5 overflow-y-auto pr-2">
-        {/* Status */}
+      <div className="space-y-5">
+        {/* ================= STATUS ================= */}
+
         <div>
           <label className="mb-2 block text-sm font-medium text-text">
             Status
@@ -131,7 +178,6 @@ export default function QuestionFormModal({
             }
             className="flex items-center gap-3"
           >
-            {/* Toggle */}
             <span
               className={`
                 relative
@@ -157,7 +203,6 @@ export default function QuestionFormModal({
               />
             </span>
 
-            {/* Status description */}
             <span>
               <span className="block text-sm font-medium text-text">
                 {form.status === "active" ? "Aktif" : "Tidak Aktif"}
@@ -172,61 +217,80 @@ export default function QuestionFormModal({
           </button>
         </div>
 
-        {/* Materi */}
+        {/* ================= MATERI ================= */}
+
         <Dropdown
           label="Topik Materi"
           value={form.materialId}
           items={materialItems}
           placeholder="Pilih materi"
+          error={errors.materialId}
           onChange={(value) => updateField("materialId", value)}
         />
 
-        {/* Judul */}
+        {/* ================= JUDUL ================= */}
+
         <Input
           label="Judul Soal"
           required
           placeholder="mis. 4. Menghitung Rata-rata"
           value={form.title}
+          error={errors.title}
           onChange={(e) => updateField("title", e.target.value)}
         />
 
-        {/* Deskripsi */}
+        {/* ================= DESKRIPSI ================= */}
+
         <Textarea
           label="Deskripsi Soal"
           placeholder="Buat fungsi Python untuk ..."
           value={form.description}
+          required
+          error={errors.description}
           onChange={(e) => updateField("description", e.target.value)}
         />
 
-        {/* Expected Output */}
+        {/* ================= EXPECTED OUTPUT ================= */}
+
         <Input
           label="Output yang Diharapkan"
+          required
           placeholder="mis. Jika r=10, maka luas=314.0"
           value={form.expectedOutput}
+          error={errors.expectedOutput}
           onChange={(e) => updateField("expectedOutput", e.target.value)}
         />
 
-        {/* Hint 1 */}
+        {/* ================= HINT 1 ================= */}
+
         <Textarea
           label="Hint 1 — Pseudocode"
           placeholder="Tuliskan langkah-langkah penyelesaian..."
           value={form.hint1}
+          required
+          error={errors.hint1}
           onChange={(e) => updateField("hint1", e.target.value)}
         />
 
-        {/* Hint 2 */}
+        {/* ================= HINT 2 ================= */}
+
         <Textarea
           label="Hint 2 — Cloze Code"
           placeholder="Berikan kode dengan beberapa bagian yang harus dilengkapi..."
           value={form.hint2}
+          required
+          error={errors.hint2}
           onChange={(e) => updateField("hint2", e.target.value)}
         />
 
-        {/* Hint 3 */}
+        {/* ================= HINT 3 ================= */}
+
         <Textarea
           label="Hint 3 — Basic Code"
           placeholder="Berikan contoh kode dasar sebagai bantuan..."
           value={form.hint3}
+          required
+          error={errors.hint3}
           onChange={(e) => updateField("hint3", e.target.value)}
         />
       </div>

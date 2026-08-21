@@ -21,6 +21,8 @@ interface DropdownProps {
   onChange: (value: string) => void;
 
   className?: string;
+
+  error?: string;
 }
 
 export default function Dropdown({
@@ -30,6 +32,7 @@ export default function Dropdown({
   items,
   onChange,
   className = "",
+  error,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
 
@@ -60,26 +63,25 @@ export default function Dropdown({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="
-          flex
-          h-11
-          w-full
-          items-center
-          justify-between
+        className={`
+  flex
+  h-11
+  w-full
+  items-center
+  justify-between
 
-          rounded-xl
+  rounded-xl
 
-          border
-          border-border
+  border
 
-          bg-surface
+  bg-surface
 
-          px-4
+  px-4
 
-          transition
+  transition
 
-          hover:border-primary
-        "
+  ${error ? "border-danger" : "border-border hover:border-primary"}
+`}
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 text-text">
           {selected?.icon}

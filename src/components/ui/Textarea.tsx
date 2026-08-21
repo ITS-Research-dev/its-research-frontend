@@ -6,10 +6,22 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  required?: boolean;
 }
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, helperText, className = "", id, ...props }, ref) => {
+  (
+    {
+      label,
+      required = false,
+      error,
+      helperText,
+      className = "",
+      id,
+      ...props
+    },
+    ref,
+  ) => {
     return (
       <div className="w-full">
         {label && (
@@ -18,6 +30,8 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             className="mb-2 block text-sm font-semibold text-text"
           >
             {label}
+
+            {required && <span className="ml-1 text-danger">*</span>}
           </label>
         )}
 

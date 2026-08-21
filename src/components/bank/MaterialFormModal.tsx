@@ -61,10 +61,16 @@ export default function MaterialFormModal({
 
   const [editorMode, setEditorMode] = useState<EditorMode>("write");
 
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof MaterialFormData, string>>
+  >({});
+
   useEffect(() => {
     if (!open) return;
 
     setEditorMode("write");
+
+    setErrors({});
 
     if (mode === "edit" && material) {
       setForm({
@@ -89,12 +95,37 @@ export default function MaterialFormModal({
       ...prev,
       [field]: value,
     }));
+
+    setErrors((prev) => ({
+      ...prev,
+      [field]: undefined,
+    }));
   };
 
   const handleSubmit = () => {
-    if (!form.title.trim()) return;
-    if (!form.description.trim()) return;
-    if (!form.content.trim()) return;
+    const newErrors: Partial<Record<keyof MaterialFormData, string>> = {};
+
+    if (!form.startDate) {
+      newErrors.startDate = "Tanggal mulai wajib diisi.";
+    }
+
+    if (!form.title.trim()) {
+      newErrors.title = "Judul materi wajib diisi.";
+    }
+
+    if (!form.description.trim()) {
+      newErrors.description = "Deskripsi materi wajib diisi.";
+    }
+
+    if (!form.content.trim()) {
+      newErrors.content = "Konten materi wajib diisi.";
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
 
     onSubmit(form);
   };
@@ -117,7 +148,7 @@ export default function MaterialFormModal({
         </>
       }
     >
-      <div className="max-h-[70vh] space-y-6 overflow-y-auto pr-2">
+      <div className="space-y-6">
         {/* ================= STATUS & TANGGAL ================= */}
 
         <div className="grid gap-5 md:grid-cols-2">
@@ -183,6 +214,8 @@ export default function MaterialFormModal({
             label="Tanggal Mulai"
             type="date"
             value={form.startDate}
+            required
+            error={errors.startDate}
             onChange={(e) => updateField("startDate", e.target.value)}
           />
         </div>
@@ -194,6 +227,7 @@ export default function MaterialFormModal({
           required
           placeholder="mis. Perulangan (Loop)"
           value={form.title}
+          error={errors.title}
           onChange={(e) => updateField("title", e.target.value)}
         />
 
@@ -203,6 +237,8 @@ export default function MaterialFormModal({
           label="Deskripsi"
           placeholder="Siswa mampu memahami konsep perulangan..."
           value={form.description}
+          required
+          error={errors.description}
           onChange={(e) => updateField("description", e.target.value)}
         />
 
@@ -212,6 +248,7 @@ export default function MaterialFormModal({
           value={form.content}
           onChange={(value) => updateField("content", value)}
           mode={editorMode}
+          error={errors.description}
           onModeChange={setEditorMode}
         />
       </div>
@@ -228,6 +265,7 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void;
   mode: EditorMode;
   onModeChange: (mode: EditorMode) => void;
+  error?: string;
 }
 
 function MarkdownEditor({
@@ -235,6 +273,7 @@ function MarkdownEditor({
   onChange,
   mode,
   onModeChange,
+  error,
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -349,7 +388,11 @@ function MarkdownEditor({
 
       {/* Editor Container */}
 
-      <div className="overflow-hidden rounded-xl border border-border">
+      <div
+        className={`overflow-hidden rounded-xl border ${
+          error ? "border-danger" : "border-border"
+        }`}
+      >
         {/* ================= HEADER ================= */}
 
         <div className="flex items-center justify-between border-b border-border bg-surface px-3 py-2">
@@ -569,6 +612,7 @@ Gunakan **for** untuk melakukan perulangan.
         Gunakan toolbar untuk memformat teks atau tulis Markdown secara
         langsung.
       </p>
+      {error && <p className="mt-1.5 text-xs text-danger">{error}</p>}
     </div>
   );
 }

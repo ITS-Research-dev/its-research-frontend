@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
@@ -26,11 +27,8 @@ type ConfirmAction = "save" | "accept-ai" | null;
 
 export default function ReviewModal({ open, data, onClose, onSave }: Props) {
   const [scores, setScores] = useState<Record<string, number>>({});
-
   const [teacherNote, setTeacherNote] = useState("");
-
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
-
   const [confirmLoading, setConfirmLoading] = useState(false);
 
   // =========================
@@ -38,7 +36,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
   // =========================
 
   useEffect(() => {
-    if (!data) return;
+    if (!open || !data) return;
 
     const initialScores: Record<string, number> = {};
 
@@ -48,15 +46,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
     setScores(initialScores);
     setTeacherNote(data.teacherNote ?? "");
-  }, [data]);
-
-  // =========================
-  // CLOSE
-  // =========================
-
-  if (!open || !data) {
-    return null;
-  }
+  }, [open, data]);
 
   // =========================
   // SCORE CHANGE
@@ -118,7 +108,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
   };
 
   // =========================
-  // CONFIRM MODAL CONTENT
+  // CONFIRM CONTENT
   // =========================
 
   const isSaveConfirmation = confirmAction === "save";
@@ -135,18 +125,37 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
   return (
     <>
-      {/* =====================================================
+      {/* =========================
           REVIEW MODAL
-      ===================================================== */}
+      ========================= */}
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm">
-        <div className="max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-surface shadow-2xl">
-          {/* =========================
-              HEADER
-          ========================= */}
+      <Modal
+        open={open}
+        onClose={onClose}
+        size="lg"
+        footer={
+          <>
+            <Button variant="primary" onClick={handleSaveClick}>
+              Koreksi & Simpan Skor
+            </Button>
 
-          <div className="flex items-start justify-between px-6 pt-6">
-            <div>
+            <Button variant="outline" onClick={handleAcceptAIClick}>
+              Terima Skor AI
+            </Button>
+          </>
+        }
+      >
+        {!data ? (
+          <div className="p-6 text-center text-description">
+            Data asesmen tidak tersedia.
+          </div>
+        ) : (
+          <div className="flex max-h-[80vh] flex-col">
+            {/* =========================
+                HEADER
+            ========================= */}
+
+            <div className="shrink-0 border-b border-border pb-5">
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                 Tinjau Asesmen
               </p>
@@ -165,39 +174,25 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-5xl font-semibold text-text transition hover:text-primary"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* =========================
-              CONTENT
-          ========================= */}
-
-          <div className="space-y-6 px-6 pb-6 pt-5">
             {/* =========================
-                CATATAN AI
+                CONTENT
             ========================= */}
+
+            {/* CATATAN AI */}
 
             <section>
               <h3 className="mb-2 text-sm font-semibold text-text">
                 Catatan dari AI
               </h3>
 
-              <div className="rounded-xl border border-border bg-background p-3">
+              <div className="rounded-xl border border-border bg-background p-4">
                 <p className="text-sm leading-relaxed text-description">
                   {data.aiNote}
                 </p>
               </div>
             </section>
 
-            {/* =========================
-                DIMENSIONS
-            ========================= */}
+            {/* DIMENSIONS */}
 
             <section>
               <h3 className="mb-3 text-sm font-semibold text-text">
@@ -208,16 +203,14 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
                 {data.dimensions.map((dimension) => (
                   <div
                     key={dimension.name}
-                    className="rounded-xl border border-border p-3"
+                    className="rounded-xl border border-border p-4"
                   >
-                    <p className="mb-3 text-sm font-semibold text-text">
+                    <p className="mb-4 text-sm font-semibold text-text">
                       {dimension.name}
                     </p>
 
                     <div className="grid grid-cols-2 gap-3">
-                      {/* =========================
-                          NILAI AI
-                      ========================= */}
+                      {/* NILAI AI */}
 
                       <div>
                         <label className="mb-1 block text-[10px] font-bold uppercase text-description">
@@ -228,13 +221,22 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
                           type="number"
                           value={dimension.aiScore}
                           disabled
-                          className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm text-description outline-none"
+                          className="
+                              h-10
+                              w-full
+                              rounded-lg
+                              border
+                              border-border
+                              bg-background
+                              px-3
+                              text-sm
+                              text-description
+                              outline-none
+                            "
                         />
                       </div>
 
-                      {/* =========================
-                          SKOR GURU
-                      ========================= */}
+                      {/* SKOR GURU */}
 
                       <div>
                         <label className="mb-1 block text-[10px] font-bold uppercase text-primary">
@@ -252,7 +254,22 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
                               event.target.value,
                             )
                           }
-                          className="h-9 w-full rounded-lg border border-primary bg-surface px-3 text-sm font-medium text-text outline-none focus:ring-2 focus:ring-primary/20"
+                          className="
+                              h-10
+                              w-full
+                              rounded-lg
+                              border
+                              border-primary
+                              bg-surface
+                              px-3
+                              text-sm
+                              font-medium
+                              text-text
+                              outline-none
+                              transition
+                              focus:ring-2
+                              focus:ring-primary/20
+                            "
                         />
                       </div>
                     </div>
@@ -260,20 +277,21 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
                 ))}
               </div>
 
-              <p className="mt-2 text-xs leading-relaxed text-description">
-                Nilai AI ditampilkan sebagai referensi (tidak dapat diubah).
-                Isi/ubah kolom Skor Guru pada tiap dimensi untuk menentukan skor
-                akhir.
+              <p className="mt-3 text-xs leading-relaxed text-description">
+                Nilai AI ditampilkan sebagai referensi dan tidak dapat diubah.
+                Anda dapat mengubah Skor Guru pada setiap dimensi untuk
+                menentukan hasil akhir.
               </p>
             </section>
 
-            {/* =========================
-                CATATAN GURU
-            ========================= */}
+            {/* CATATAN GURU */}
 
             <section>
               <h3 className="mb-2 text-sm font-semibold text-text">
-                Catatan Guru (opsional)
+                Catatan Guru
+                <span className="ml-1 font-normal text-description">
+                  (opsional)
+                </span>
               </h3>
 
               <Textarea
@@ -283,12 +301,13 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
                 rows={3}
               />
             </section>
+            {/* </div> */}
 
             {/* =========================
                 ACTION
             ========================= */}
-
-            <div className="flex flex-wrap gap-3">
+            {/* 
+            <div className="flex shrink-0 flex-wrap gap-3 border-t border-border py-5">
               <Button variant="primary" onClick={handleSaveClick}>
                 Koreksi & Simpan Skor
               </Button>
@@ -296,14 +315,14 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
               <Button variant="outline" onClick={handleAcceptAIClick}>
                 Terima Skor AI
               </Button>
-            </div>
+            </div> */}
           </div>
-        </div>
-      </div>
+        )}
+      </Modal>
 
-      {/* =====================================================
+      {/* =========================
           CONFIRM MODAL
-      ===================================================== */}
+      ========================= */}
 
       <ConfirmModal
         open={confirmAction !== null}
