@@ -207,8 +207,8 @@ export default function LevelTrendChart({entries, topics }: Props) {
 
             <Tooltip
               formatter={(value) => {
-                if(!value) return ""
-                return formatLevel(value).level
+                if (!value) return "";
+                return formatLevel(Number(value)).level;
               }}
             />
 

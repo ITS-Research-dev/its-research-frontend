@@ -695,6 +695,12 @@ class MonitoringService {
       topicScores,
     };
   }
+
+  async getAssessmentDetail(studentId: string, assessmentId: string) {
+    const res = await this.getStudentDetail(studentId);
+    const item = res.profile.raw.find((a) => a.id === assessmentId);
+    return item || null;
+  }
 }
 
 export const monitoringService = new MonitoringService();

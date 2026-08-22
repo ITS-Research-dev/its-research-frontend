@@ -527,26 +527,46 @@ export const monitoringData: MonitoringData = {
     {
       id: "1",
       name: "Dika Pratama",
+      averageScore: 88,
+      level: "Tinggi",
+      competencies: [],
+      assessments: [],
     },
 
     {
       id: "2",
       name: "Citra Ramadhani",
+      averageScore: 84,
+      level: "Tinggi",
+      competencies: [],
+      assessments: [],
     },
 
     {
       id: "3",
       name: "Eka Putri",
+      averageScore: 80,
+      level: "Sedang",
+      competencies: [],
+      assessments: [],
     },
 
     {
       id: "4",
       name: "Ayu Lestari",
+      averageScore: 78,
+      level: "Sedang",
+      competencies: [],
+      assessments: [],
     },
 
     {
       id: "5",
       name: "Rizky Maulana",
+      averageScore: 75,
+      level: "Sedang",
+      competencies: [],
+      assessments: [],
     },
   ],
 

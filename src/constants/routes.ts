@@ -16,11 +16,17 @@ export const ROUTES = {
       DASHBOARD_TREND: "/teacher/dashboard/trend",
       BANK_MATERI: "/teacher/bank/materials",
       BANK_SOAL: "/teacher/bank/questions",
+      GENERATE_FROM_REFERENCE: "/api/generate-materi",
       MONITORING_CLASSES: "/teacher/monitoring/classes",
       MONITORING_CLASS: (className: string) =>
         `/teacher/monitoring/classes/${encodeURIComponent(className)}`,
       MONITORING_STUDENT: (className: string, studentId: string) =>
         `/teacher/monitoring/classes/${encodeURIComponent(className)}/students/${studentId}`,
+      STUDENT_PROFILE: "/teacher/student-profile",
+    },
+    GEMINI: {
+      GENERATE_MATERI: "/api/generate-materi",
+      COUNT_TOKENS: "/api/count-tokens",
     },
   },
 
