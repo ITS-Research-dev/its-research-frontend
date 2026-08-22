@@ -361,7 +361,7 @@ export default function TeacherBankPage() {
           MATERIAL TAB
       ================================================= */}
 
-      {activeTab === "material" && (
+      <div className={activeTab === "material" ? "block" : "hidden"}>
         <Card className="p-7">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -377,13 +377,13 @@ export default function TeacherBankPage() {
 
           <MaterialTable data={materials} onEdit={handleEditMaterial} />
         </Card>
-      )}
+      </div>
 
       {/* =================================================
           QUESTION TAB
       ================================================= */}
 
-      {activeTab === "question" && (
+      <div className={activeTab === "question" ? "block" : "hidden"}>
         <Card className="p-7">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -399,19 +399,19 @@ export default function TeacherBankPage() {
 
           <QuestionTable data={questions} onEdit={handleEditQuestion} />
         </Card>
-      )}
+      </div>
 
       {/* =================================================
           REFERENCE TAB
       ================================================= */}
 
-      {activeTab === "reference" && (
+      <div className={activeTab === "reference" ? "block" : "hidden"}>
         <ReferenceUpload
           selectedClassId={selectedClassId}
           materials={materials}
           onPublished={reload}
         />
-      )}
+      </div>
 
       {/* =================================================
           MATERIAL FORM MODAL
