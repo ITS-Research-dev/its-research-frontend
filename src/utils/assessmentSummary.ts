@@ -10,7 +10,6 @@ import {
 
 function formatToCompetencies(score: Scoring | string): CompetencySummary[]{
     score = typeof score === 'string' ? JSON.parse(score) : score;
-    console.log(score)
     return Object.entries(score).map(
     ([name, score]) => ({ name, score })
   );

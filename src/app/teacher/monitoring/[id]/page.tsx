@@ -46,9 +46,6 @@ export default function TeacherMonitoringStudentPage({ params }: Props) {
 
   const profile = student.profile;
 
-  console.log(`STUDENT PROFILE:`)
-  console.log({profile})
-
   const topics = student.topicScores.map((item) => item.topic);
 
   return (
