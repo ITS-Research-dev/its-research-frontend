@@ -53,7 +53,7 @@ export function formatIntoProfileSummary(
   datas: ProfileResponse[],
 ): ProfileSummary {
   let countAverage = 0,
-    competencySum = {
+    competencySum: Scoring = {
       fungsionalitas: 0,
       logika: 0,
       syntax: 0,

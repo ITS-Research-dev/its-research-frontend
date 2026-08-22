@@ -405,7 +405,13 @@ export default function TeacherBankPage() {
           REFERENCE TAB
       ================================================= */}
 
-      {activeTab === "reference" && <ReferenceUpload />}
+      {activeTab === "reference" && (
+        <ReferenceUpload
+          selectedClassId={selectedClassId}
+          materials={materials}
+          onPublished={reload}
+        />
+      )}
 
       {/* =================================================
           MATERIAL FORM MODAL

@@ -10,27 +10,31 @@ import {
   AlertTriangle,
   RefreshCw,
   ArrowLeft,
+  Sparkles,
 } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import Dropdown from "@/components/ui/DropDown";
 
-import { TopicDropdown } from "@/types/bank";
+import {
+  BankMaterial,
+  GeminiGenerateResponse,
+  GeminiMateriItem,
+  GeminiQuestionItem,
+  TopicDropdown,
+} from "@/types/bank";
 import { MaterialFormData } from "@/components/bank/MaterialFormModal";
 import { QuestionFormData } from "@/components/bank/QuestionFormModal";
+import bankService from "@/services/bank.service";
 
 /* =====================================================
-   TYPE LOKAL (khusus alur reference → generate)
-   -----------------------------------------------------
-   Draft mengikuti bentuk MaterialFormData / QuestionFormData
-   persis, supaya nanti tinggal dioper langsung ke
-   bankService.createMaterial / createQuestion tanpa mapping
-   ulang. "source" & "type" hanya metadata tambahan untuk UI.
+   TYPE LOKAL (alur reference → generate)
 ===================================================== */
 
 type Step =
   | "upload" // pilih & proses file
-  | "processing" // ekstrak dokumen (simulasi)
+  | "processing" // ekstrak dokumen & generate via Gemini API
   | "not_found" // materi python tidak ditemukan
   | "topic" // pilih topik + tombol generate
   | "preview"; // hasil generate + generate ulang / publikasikan
@@ -55,111 +59,21 @@ interface GeneratedQuestionDraft extends QuestionFormData {
 
 type GeneratedDraft = GeneratedMaterialDraft | GeneratedQuestionDraft;
 
-/* =====================================================
-   MOCK DATA & MOCK API
-   -----------------------------------------------------
-   TODO: ganti dengan endpoint asli (process reference,
-   generate, publish) begitu backend-nya siap.
-===================================================== */
-
-const MOCK_TOPICS: TopicDropdown[] = [
-  { id: "t1", title: "Variabel & Tipe Data" },
-  { id: "t2", title: "Struktur Kontrol (if/else)" },
-  { id: "t3", title: "Perulangan (Loop)" },
-  { id: "t4", title: "Fungsi (Function)" },
-  { id: "t5", title: "List & Dictionary" },
-];
-
-function mockProcessReference(file: File): Promise<{
-  status: "processed" | "not_found";
-  chunkCount: number;
-  topics: TopicDropdown[];
-}> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const isPython = file.name.toLowerCase().includes("python");
-
-      if (!isPython) {
-        resolve({ status: "not_found", chunkCount: 0, topics: [] });
-        return;
-      }
-
-      resolve({ status: "processed", chunkCount: 48, topics: MOCK_TOPICS });
-    }, 1200);
-  });
-}
-
-function mockGenerate(
-  type: GenerateType,
-  topic: TopicDropdown,
-  fileName: string,
-): Promise<GeneratedDraft> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const source: GeneratedSource = {
-        chapter: `Bab 4, "Struktur Kontrol Program"`,
-        fileName,
-        pageRange: "62–68",
-      };
-
-      if (type === "material") {
-        const draft: GeneratedMaterialDraft = {
-          type: "material",
-          title: `${topic.title} dalam Python`,
-          description:
-            "Siswa mampu memahami konsep dasar dan menerapkannya dalam kode Python.",
-          content: `# ${topic.title} dalam Python
-
-${topic.title} memungkinkan program mengambil keputusan atau menjalankan instruksi secara terstruktur.
-
-## Contoh Kode
-
-\`\`\`python
-if nilai >= 75:
-    print("Lulus")
-else:
-    print("Belum lulus")
-\`\`\`
-
-Pada contoh di atas, program akan mencetak **"Lulus"** jika \`nilai\` lebih besar atau sama dengan 75, dan **"Belum lulus"** jika sebaliknya.`,
-          startDate: new Date().toISOString().slice(0, 10),
-          status: "active",
-          source,
-        };
-
-        resolve(draft);
-        return;
-      }
-
-      const questionDraft: GeneratedQuestionDraft = {
-        type: "question",
-        materialId: "",
-        title: `Latihan ${topic.title}`,
-        description: `Buatlah program Python yang menerapkan konsep "${topic.title}" untuk mengecek kelulusan siswa berdasarkan nilai yang diinput.`,
-        expectedOutput: "Lulus / Belum lulus",
-        hint1:
-          "Bandingkan nilai siswa dengan batas kelulusan menggunakan struktur if/else.",
-        hint2: "if nilai ___ 75:\n    print(___)\nelse:\n    print(___)",
-        hint3:
-          'if nilai >= 75:\n    print("Lulus")\nelse:\n    print("Belum lulus")',
-        status: "active",
-        source,
-      };
-
-      resolve(questionDraft);
-    }, 1200);
-  });
-}
-
-function mockPublish(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 800));
+interface ReferenceUploadProps {
+  selectedClassId?: string;
+  materials?: BankMaterial[];
+  onPublished?: () => void;
 }
 
 /* =====================================================
    COMPONENT
 ===================================================== */
 
-export default function ReferenceUpload() {
+export default function ReferenceUpload({
+  selectedClassId = "",
+  materials = [],
+  onPublished,
+}: ReferenceUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>("upload");
@@ -169,8 +83,15 @@ export default function ReferenceUpload() {
   const [topics, setTopics] = useState<TopicDropdown[]>([]);
   const [selectedTopicId, setSelectedTopicId] = useState<string>("");
 
+  const [extractedMaterials, setExtractedMaterials] = useState<
+    GeminiMateriItem[]
+  >([]);
+  const [geminiResponse, setGeminiResponse] =
+    useState<GeminiGenerateResponse | null>(null);
+
   const [generating, setGenerating] = useState<GenerateType | null>(null);
   const [draft, setDraft] = useState<GeneratedDraft | null>(null);
+  const [questionIndex, setQuestionIndex] = useState(0);
 
   const [publishing, setPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(false);
@@ -180,7 +101,7 @@ export default function ReferenceUpload() {
   const selectedTopic = topics.find((t) => t.id === selectedTopicId);
 
   /* =====================================================
-     RESET (dipakai di beberapa titik)
+     RESET
   ===================================================== */
 
   const resetAll = () => {
@@ -188,7 +109,10 @@ export default function ReferenceUpload() {
     setChunkCount(0);
     setTopics([]);
     setSelectedTopicId("");
+    setExtractedMaterials([]);
+    setGeminiResponse(null);
     setDraft(null);
+    setQuestionIndex(0);
     setPublishSuccess(false);
     setErrorMessage(null);
     setStep("upload");
@@ -197,7 +121,7 @@ export default function ReferenceUpload() {
   };
 
   /* =====================================================
-     STEP 1 → UPLOAD FILE
+     STEP 1 → UPLOAD FILE & PROSES DENGAN GEMINI API
   ===================================================== */
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,28 +140,47 @@ export default function ReferenceUpload() {
     setErrorMessage(null);
 
     try {
-      const result = await mockProcessReference(file);
+      const response = await bankService.generateFromReference(file);
+      setGeminiResponse(response);
 
-      setChunkCount(result.chunkCount);
-      setTopics(result.topics);
+      const result = response.result;
 
-      if (result.status === "not_found" || result.topics.length === 0) {
+      if (
+        result.status === "no_data" ||
+        !result.data ||
+        result.data.length === 0
+      ) {
         setStep("not_found");
         return;
       }
 
-      setSelectedTopicId(result.topics[0].id);
+      const rawData = result.data;
+      const topicList: TopicDropdown[] = rawData.map((item, idx) => ({
+        id: String(item.id ?? idx + 1),
+        title: item.title,
+      }));
+
+      setExtractedMaterials(rawData);
+      setTopics(topicList);
+      setChunkCount(result.total_materi || topicList.length);
+
+      if (topicList.length > 0) {
+        setSelectedTopicId(topicList[0].id);
+      }
+
       setStep("topic");
-    } catch {
-      setErrorMessage(
-        "Gagal memproses dokumen. Pastikan file PDF valid lalu coba lagi.",
-      );
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Gagal memproses dokumen dengan Gemini AI. Pastikan file PDF valid lalu coba lagi.";
+      setErrorMessage(msg);
       setStep("upload");
     }
   };
 
   /* =====================================================
-     STEP 3 → GENERATE
+     STEP 3 → GENERATE MATERI / SOAL
   ===================================================== */
 
   const runGenerate = async (type: GenerateType) => {
@@ -247,19 +190,108 @@ export default function ReferenceUpload() {
     setErrorMessage(null);
 
     try {
-      const result = await mockGenerate(type, selectedTopic, file.name);
+      const matchedItem = extractedMaterials.find(
+        (m, idx) => String(m.id ?? idx + 1) === selectedTopicId,
+      );
 
-      setDraft(result);
+      if (!matchedItem) {
+        throw new Error("Data materi untuk topik ini tidak ditemukan.");
+      }
+
+      const fileName = geminiResponse?.fileName || file.name;
+
+      if (type === "material") {
+        const source: GeneratedSource = {
+          chapter: matchedItem.title,
+          fileName,
+          pageRange:
+            matchedItem.existing_questions?.[0]?.reference ||
+            "Dokumen Referensi",
+        };
+
+        const materialDraft: GeneratedMaterialDraft = {
+          type: "material",
+          title: matchedItem.title,
+          description:
+            matchedItem.description ||
+            `Materi pembelajaran mengenai ${matchedItem.title}.`,
+          content: matchedItem.subjects || `# ${matchedItem.title}\n\n`,
+          startDate: new Date().toISOString().slice(0, 10),
+          status: "active",
+          source,
+        };
+
+        setDraft(materialDraft);
+        setStep("preview");
+        return;
+      }
+
+      // Type === "question"
+      const allQuestions: GeminiQuestionItem[] = [
+        ...(matchedItem.generated_questions || []),
+        ...(matchedItem.existing_questions || []),
+      ];
+
+      if (allQuestions.length === 0) {
+        // Fallback default question if none present in parsed data
+        allQuestions.push({
+          reference: "AI Generated",
+          "sub-theme": matchedItem.title,
+          judul: `Latihan ${matchedItem.title}`,
+          soal: `Buatlah program Python yang menerapkan konsep "${matchedItem.title}".`,
+          expected_output: "Output program sesuai spesifikasi.",
+          hint1: "Pahami instruksi dan analisis alur program.",
+          hint2: "Lengkapi kode yang rumpang.",
+          hint3: "Tuliskan kode program secara terstruktur.",
+        });
+      }
+
+      const currentQ = allQuestions[questionIndex % allQuestions.length];
+
+      // Auto-match existing bank material if possible
+      const matchedBankMaterial = materials.find(
+        (m) =>
+          m.title.toLowerCase().includes(matchedItem.title.toLowerCase()) ||
+          matchedItem.title.toLowerCase().includes(m.title.toLowerCase()),
+      );
+
+      const assignedMaterialId =
+        matchedBankMaterial?.id || (materials.length > 0 ? materials[0].id : "");
+
+      const source: GeneratedSource = {
+        chapter: currentQ["sub-theme"] || matchedItem.title,
+        fileName,
+        pageRange: currentQ.reference || "AI Generated",
+      };
+
+      const questionDraft: GeneratedQuestionDraft = {
+        type: "question",
+        materialId: assignedMaterialId,
+        title: currentQ.judul || `Latihan ${matchedItem.title}`,
+        description: currentQ.soal || "",
+        expectedOutput: currentQ.expected_output || "",
+        hint1: currentQ.hint1 || "Gunakan konsep dasar Python.",
+        hint2: currentQ.hint2 || "Lengkapi bagian kode yang diperlukan.",
+        hint3: currentQ.hint3 || "Tuliskan implementasi kode lengkap.",
+        status: "active",
+        source,
+      };
+
+      setDraft(questionDraft);
       setStep("preview");
-    } catch {
-      setErrorMessage("Gagal generate konten. Silakan coba lagi.");
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Gagal generate konten. Silakan coba lagi.");
     } finally {
       setGenerating(null);
     }
   };
 
   const handleRegenerate = () => {
-    if (draft) runGenerate(draft.type);
+    if (!draft) return;
+    if (draft.type === "question") {
+      setQuestionIndex((prev) => prev + 1);
+    }
+    runGenerate(draft.type);
   };
 
   const handleBackToTopic = () => {
@@ -269,7 +301,7 @@ export default function ReferenceUpload() {
   };
 
   /* =====================================================
-     STEP 4 → PUBLISH
+     STEP 4 → PUBLISH (SAVE TO DATABASE)
   ===================================================== */
 
   const handlePublish = async () => {
@@ -279,18 +311,48 @@ export default function ReferenceUpload() {
     setErrorMessage(null);
 
     try {
-      /*
-       * TODO: ganti dengan bankService.createMaterial(classId, draft)
-       * atau bankService.createQuestion(draft) — bentuk draft sudah
-       * mengikuti MaterialFormData / QuestionFormData jadi tinggal
-       * dioper langsung (buang field "type" & "source").
-       */
+      if (draft.type === "material") {
+        if (!selectedClassId) {
+          throw new Error(
+            "Kelas belum dipilih. Silakan pilih kelas terlebih dahulu.",
+          );
+        }
 
-      await mockPublish();
+        await bankService.createMaterial(selectedClassId, {
+          title: draft.title,
+          description: draft.description,
+          content: draft.content,
+          startDate: draft.startDate,
+          status: draft.status,
+        });
+      } else {
+        // Question
+        if (!draft.materialId) {
+          throw new Error(
+            "Topik Materi wajib dipilih untuk menghubungkan soal ini dengan Bank Materi.",
+          );
+        }
 
+        await bankService.createQuestion({
+          materialId: draft.materialId,
+          title: draft.title,
+          description: draft.description,
+          expectedOutput: draft.expectedOutput,
+          hint1: draft.hint1,
+          hint2: draft.hint2,
+          hint3: draft.hint3,
+          status: draft.status,
+        });
+      }
+
+      onPublished?.();
       setPublishSuccess(true);
-    } catch {
-      setErrorMessage("Gagal mempublikasikan hasil. Silakan coba lagi.");
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Gagal mempublikasikan hasil. Silakan coba lagi.";
+      setErrorMessage(msg);
     } finally {
       setPublishing(false);
     }
@@ -307,6 +369,11 @@ export default function ReferenceUpload() {
      RENDER
   ===================================================== */
 
+  const materialDropdownItems = materials.map((m) => ({
+    label: m.title,
+    value: m.id,
+  }));
+
   return (
     <Card className="p-7">
       {/* =================================================
@@ -315,17 +382,24 @@ export default function ReferenceUpload() {
 
       {step === "upload" && (
         <>
-          <h2 className="text-lg font-bold text-text">Upload Buku Referensi</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-text">
+              Upload Buku Referensi
+            </h2>
+            <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+              <Sparkles size={13} /> Gemini AI
+            </span>
+          </div>
 
           <p className="mt-2 text-description">
-            Unggah softfile buku (PDF), sistem akan mengekstrak dan menyimpannya
-            sebagai basis rujukan.
+            Unggah softfile buku (PDF), sistem akan mengekstrak materi Python dan
+            membuat draf materi serta latihan soal secara otomatis.
           </p>
 
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf"
+            accept=".pdf,.docx"
             className="hidden"
             onChange={handleFileChange}
           />
@@ -354,7 +428,7 @@ export default function ReferenceUpload() {
             <FolderOpen size={38} className="text-warning" />
 
             <p className="mt-4 font-semibold text-text">
-              Klik atau seret file PDF ke sini
+              Klik atau seret file PDF / DOCX ke sini
             </p>
 
             <p className="mt-1 text-sm text-description">Maks. 25MB per file</p>
@@ -405,7 +479,7 @@ export default function ReferenceUpload() {
               className="mt-5 bg-primary text-white hover:bg-primary/90"
               onClick={handleProcessDocument}
             >
-              Proses Dokumen →
+              Proses Dokumen dengan Gemini AI →
             </Button>
           )}
         </>
@@ -420,13 +494,14 @@ export default function ReferenceUpload() {
           <Loader2 size={32} className="animate-spin text-primary" />
 
           <p className="text-sm font-semibold text-text">
-            Memproses Dokumen...
+            Memproses Dokumen dengan Gemini AI...
           </p>
 
           <p className="max-w-sm text-sm text-description">
-            Sistem sedang membaca dan mengekstrak isi{" "}
-            <span className="font-medium text-text">{file?.name}</span>. Mohon
-            tunggu sebentar.
+            Sistem sedang membaca isi{" "}
+            <span className="font-medium text-text">{file?.name}</span>, menyaring
+            materi Python, serta menghasilkan draf materi & soal. Mohon tunggu
+            sebentar.
           </p>
         </div>
       )}
@@ -484,7 +559,7 @@ export default function ReferenceUpload() {
             {file?.name}
             <span className="flex items-center gap-1">
               <CheckCircle2 size={16} />
-              Terproses ({chunkCount} chunk tersimpan)
+              Terproses ({chunkCount} topik Python ditemukan)
             </span>
           </div>
 
@@ -622,7 +697,7 @@ export default function ReferenceUpload() {
                 text-primary
               "
             >
-              Draf Hasil Generate ·{" "}
+              <Sparkles size={13} /> Draf Hasil Gemini AI ·{" "}
               {draft.type === "material" ? "Materi" : "Soal"}
             </span>
 
@@ -644,7 +719,7 @@ export default function ReferenceUpload() {
             </button>
           </div>
 
-          {/* ===== PREVIEW MATERI (mengikuti field MaterialFormData) ===== */}
+          {/* ===== PREVIEW MATERI ===== */}
 
           {draft.type === "material" && (
             <div className="space-y-4">
@@ -718,10 +793,30 @@ export default function ReferenceUpload() {
             </div>
           )}
 
-          {/* ===== PREVIEW SOAL (mengikuti field QuestionFormData) ===== */}
+          {/* ===== PREVIEW SOAL ===== */}
 
           {draft.type === "question" && (
             <div className="space-y-4">
+              {materials.length > 0 && (
+                <div>
+                  <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-description">
+                    Hubungkan ke Topik Bank Materi
+                  </label>
+                  <Dropdown
+                    value={draft.materialId}
+                    items={materialDropdownItems}
+                    placeholder="Pilih materi untuk soal ini"
+                    onChange={(value) =>
+                      setDraft((prev) =>
+                        prev && prev.type === "question"
+                          ? { ...prev, materialId: value }
+                          : prev,
+                      )
+                    }
+                  />
+                </div>
+              )}
+
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-description">
                   Judul Soal
@@ -782,7 +877,7 @@ export default function ReferenceUpload() {
             </p>
 
             <p className="mt-1 text-sm text-text">
-              {draft.source.chapter} — {draft.source.fileName}, hal.{" "}
+              {draft.source.chapter} — {draft.source.fileName}, Ref:{" "}
               {draft.source.pageRange}
             </p>
           </div>
@@ -821,7 +916,7 @@ export default function ReferenceUpload() {
               ) : (
                 <RefreshCw size={16} />
               )}
-              Generate Ulang
+              Generate Variasi Lain
             </button>
 
             <Button
@@ -832,7 +927,7 @@ export default function ReferenceUpload() {
               {publishing ? (
                 <span className="flex items-center gap-2">
                   <Loader2 size={16} className="animate-spin" />
-                  Menyimpan...
+                  Menyimpan ke Database...
                 </span>
               ) : (
                 "Setujui & Publikasikan"
@@ -857,7 +952,7 @@ export default function ReferenceUpload() {
           <p className="max-w-sm text-sm text-description">
             {draft.type === "material" ? "Materi" : "Soal"} "{draft.title}"
             sudah ditambahkan ke Bank{" "}
-            {draft.type === "material" ? "Materi" : "Soal"}.
+            {draft.type === "material" ? "Materi" : "Soal"} database.
           </p>
 
           <div className="mt-2 flex flex-wrap justify-center gap-3">
