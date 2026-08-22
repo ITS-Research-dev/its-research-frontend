@@ -475,12 +475,14 @@ export default function ReferenceUpload({
           )}
 
           {file && (
-            <Button
-              className="mt-5 bg-primary text-white hover:bg-primary/90"
-              onClick={handleProcessDocument}
-            >
-              Proses Dokumen dengan Gemini AI →
-            </Button>
+            <div className="flex justify-end w-full h-fit items-center mt-10">
+              <Button
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={handleProcessDocument}
+                >
+                Proses Dokumen dengan Gemini AI →
+              </Button>
+            </div>
           )}
         </>
       )}
