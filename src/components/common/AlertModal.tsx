@@ -12,7 +12,7 @@ interface AlertModalProps {
 
   title: string;
 
-  description: string;
+  description: string | string[];
 
   type?: AlertType;
 
@@ -68,7 +68,7 @@ export default function AlertModal({
 
         <h2 className="text-xl font-semibold text-text">{title}</h2>
 
-        <p className="mt-3 text-description">{description}</p>
+        <p className={`mt-3 text-description ${(typeof description != "string") && "bg-red-100 p-3 rounded-md text-red-500"}`}>{typeof description == 'string' ? description : description.map((e) => <>{e}<br/></>)}</p>
 
         <div className="mt-8 w-full">
           <Button fullWidth onClick={onClose}>
