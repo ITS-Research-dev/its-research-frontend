@@ -20,6 +20,12 @@ interface Props {
 
   running?: boolean;
 
+  /** Whether there's already a submission being processed in the queue */
+  hasQueuedSubmission?: boolean;
+
+  /** Position in queue for the current question (0 = not queued) */
+  queuePosition?: number;
+
   onCodeChange: (value: string) => void;
 
   onRun: () => Promise<RunResult>;
@@ -31,6 +37,8 @@ export default function CodeEditor({
   code,
   disabled = false,
   running = false,
+  hasQueuedSubmission = false,
+  queuePosition = 0,
   onCodeChange,
   onRun,
   onSubmit,
@@ -111,6 +119,20 @@ export default function CodeEditor({
     };
   }, [disabled, running, code]);
 
+  // Determine submit button text
+  const getSubmitLabel = () => {
+    if (disabled && queuePosition > 0) {
+      return `Antrian #${queuePosition}`;
+    }
+    if (disabled) {
+      return "Sudah Disubmit";
+    }
+    if (hasQueuedSubmission) {
+      return "Submit (Antrian)";
+    }
+    return "Submit";
+  };
+
   return (
     <div>
       {/* HEADER */}
@@ -141,7 +163,15 @@ export default function CodeEditor({
       <CodeTerminal ref={terminalRef} />
 
       {/* ACTION */}
-      <div className="flex justify-end gap-3 border-t border-border bg-white px-6 py-4">
+      <div className="flex items-center justify-end gap-3 border-t border-border bg-white px-6 py-4">
+        {/* Queue position indicator */}
+        {queuePosition > 0 && (
+          <span className="mr-auto inline-flex items-center gap-1.5 rounded-lg bg-warning/10 px-3 py-1.5 text-xs font-semibold text-warning">
+            <span className="h-1.5 w-1.5 rounded-full bg-warning animate-pulse" />
+            Antrian #{queuePosition}
+          </span>
+        )}
+
         <Button
           variant="secondary"
           loading={running}
@@ -152,7 +182,7 @@ export default function CodeEditor({
         </Button>
 
         <Button disabled={disabled} onClick={onSubmit}>
-          Submit
+          {getSubmitLabel()}
         </Button>
       </div>
     </div>
