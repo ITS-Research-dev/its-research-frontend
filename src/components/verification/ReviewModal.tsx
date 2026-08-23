@@ -12,13 +12,15 @@ import ConfirmModal from "../common/ConfirmModal";
 
 interface Props {
   open: boolean;
+
   data?: VerificationItem;
+
   onClose: () => void;
 
   onSave?: (
     id: string,
     scores: Record<string, number>,
-    teacherNote: string,
+    note: string,
     decision: "terima" | "koreksi",
   ) => void;
 }
@@ -27,13 +29,20 @@ type ConfirmAction = "save" | "accept-ai" | null;
 
 export default function ReviewModal({ open, data, onClose, onSave }: Props) {
   const [scores, setScores] = useState<Record<string, number>>({});
-  const [teacherNote, setTeacherNote] = useState("");
+
+  /**
+   * Catatan berasal dari AI sebagai nilai awal,
+   * tetapi tetap dapat diedit oleh guru.
+   */
+  const [note, setNote] = useState("");
+
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
+
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-  // =========================
-  // INITIAL DATA
-  // =========================
+  /* =========================
+     INITIAL DATA
+  ========================= */
 
   useEffect(() => {
     if (!open || !data) return;
@@ -45,12 +54,16 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
     });
 
     setScores(initialScores);
-    setTeacherNote(data.teacherNote ?? "");
+
+    /**
+     * Catatan selalu dimulai dari AI.
+     */
+    setNote(data.aiNote ?? "");
   }, [open, data]);
 
-  // =========================
-  // SCORE CHANGE
-  // =========================
+  /* =========================
+     SCORE CHANGE
+  ========================= */
 
   const handleScoreChange = (dimension: string, value: string) => {
     const numericValue = Math.min(100, Math.max(0, Number(value)));
@@ -61,9 +74,9 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
     }));
   };
 
-  // =========================
-  // OPEN CONFIRMATION
-  // =========================
+  /* =========================
+     OPEN CONFIRMATION
+  ========================= */
 
   const handleSaveClick = () => {
     setConfirmAction("save");
@@ -73,19 +86,25 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
     setConfirmAction("accept-ai");
   };
 
-  // =========================
-  // CONFIRM ACTION
-  // =========================
+  /* =========================
+     CONFIRM ACTION
+  ========================= */
 
   const handleConfirm = () => {
     if (!data || !confirmAction) return;
 
     setConfirmLoading(true);
 
+    /**
+     * Guru melakukan perubahan skor.
+     */
     if (confirmAction === "save") {
-      onSave?.(data.id, scores, teacherNote, "koreksi");
+      onSave?.(data.id, scores, note, "koreksi");
     }
 
+    /**
+     * Guru menerima seluruh skor AI.
+     */
     if (confirmAction === "accept-ai") {
       const aiScores: Record<string, number> = {};
 
@@ -95,21 +114,22 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
       setScores(aiScores);
 
-      onSave?.(
-        data.id,
-        aiScores,
-        "Sesuai, skor AI diterima langsung.",
-        "terima",
-      );
+      /**
+       * Catatan tetap menggunakan isi textarea.
+       * Artinya, catatan AI dapat tetap diedit
+       * sebelum skor AI diterima.
+       */
+      onSave?.(data.id, aiScores, note, "terima");
     }
 
     setConfirmLoading(false);
+
     setConfirmAction(null);
   };
 
-  // =========================
-  // CONFIRM CONTENT
-  // =========================
+  /* =========================
+     CONFIRM CONTENT
+  ========================= */
 
   const isSaveConfirmation = confirmAction === "save";
 
@@ -118,17 +138,13 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
     : "Terima Skor AI?";
 
   const confirmDescription = isSaveConfirmation
-    ? "Apakah Anda yakin ingin menyimpan perubahan skor dan catatan guru untuk asesmen ini?"
-    : "Apakah Anda yakin ingin menerima seluruh skor dari AI tanpa melakukan perubahan?";
+    ? "Apakah Anda yakin ingin menyimpan perubahan skor dan catatan untuk asesmen ini?"
+    : "Apakah Anda yakin ingin menerima seluruh skor dari AI?";
 
   const confirmText = isSaveConfirmation ? "Ya, Simpan" : "Ya, Terima Skor AI";
 
   return (
     <>
-      {/* =========================
-          REVIEW MODAL
-      ========================= */}
-
       <Modal
         open={open}
         onClose={onClose}
@@ -150,7 +166,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
             Data asesmen tidak tersedia.
           </div>
         ) : (
-          <div className="flex max-h-[80vh] flex-col">
+          <div className="flex flex-col">
             {/* =========================
                 HEADER
             ========================= */}
@@ -174,54 +190,94 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
               </div>
             </div>
 
-            {/* =========================
-                CONTENT
-            ========================= */}
+            <div className="space-y-6 py-6">
+              {/* =========================
+                  SOAL
+              ========================= */}
 
-            {/* CATATAN AI */}
+              <section>
+                <h3 className="mb-2 text-sm font-semibold text-text">Soal</h3>
 
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-text">
-                Catatan dari AI
-              </h3>
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-text">
+                    {data.questionTitle}
+                  </p>
+                </div>
+              </section>
 
-              <div className="rounded-xl border border-border bg-background p-4">
-                <p className="text-sm leading-relaxed text-description">
-                  {data.aiNote}
-                </p>
-              </div>
-            </section>
+              {/* =========================
+                  JAWABAN SISWA
+              ========================= */}
 
-            {/* DIMENSIONS */}
+              <section>
+                <h3 className="mb-2 text-sm font-semibold text-text">
+                  Jawaban Siswa
+                </h3>
 
-            <section>
-              <h3 className="mb-3 text-sm font-semibold text-text">
-                Nilai AI & Override Skor Guru per Dimensi
-              </h3>
+                <div className="overflow-hidden rounded-xl border border-border">
+                  {/* Header Code Editor */}
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                {data.dimensions.map((dimension) => (
-                  <div
-                    key={dimension.name}
-                    className="rounded-xl border border-border p-4"
-                  >
-                    <p className="mb-4 text-sm font-semibold text-text">
-                      {dimension.name}
-                    </p>
+                  <div className="flex items-center justify-between border-b border-border bg-background px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                    </div>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* NILAI AI */}
+                    <span className="font-mono text-xs text-description">
+                      Jawaban Siswa
+                    </span>
+                  </div>
 
-                      <div>
-                        <label className="mb-1 block text-[10px] font-bold uppercase text-description">
-                          Nilai AI
-                        </label>
+                  {/* Code */}
 
-                        <input
-                          type="number"
-                          value={dimension.aiScore}
-                          disabled
-                          className="
+                  <pre className="overflow-x-auto bg-[#1e1e1e] p-5 text-sm leading-relaxed text-gray-100">
+                    <code>
+                      {data.userAnswer ?? "Jawaban siswa tidak tersedia."}
+                    </code>
+                  </pre>
+                </div>
+              </section>
+
+              {/* =========================
+                  NILAI & OVERRIDE
+              ========================= */}
+
+              <section>
+                <div className="mb-3">
+                  <h3 className="text-sm font-semibold text-text">
+                    Nilai AI & Override Skor Guru
+                  </h3>
+
+                  <p className="mt-1 text-xs text-description">
+                    Nilai AI digunakan sebagai referensi. Guru dapat mengubah
+                    skor akhir pada setiap dimensi.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {data.dimensions.map((dimension) => (
+                    <div
+                      key={dimension.name}
+                      className="rounded-xl border border-border p-4"
+                    >
+                      <p className="mb-4 text-sm font-semibold text-text">
+                        {dimension.name}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* NILAI AI */}
+
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase text-description">
+                            Nilai AI
+                          </label>
+
+                          <input
+                            type="number"
+                            value={dimension.aiScore}
+                            disabled
+                            className="
                               h-10
                               w-full
                               rounded-lg
@@ -233,28 +289,28 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
                               text-description
                               outline-none
                             "
-                        />
-                      </div>
+                          />
+                        </div>
 
-                      {/* SKOR GURU */}
+                        {/* SKOR GURU */}
 
-                      <div>
-                        <label className="mb-1 block text-[10px] font-bold uppercase text-primary">
-                          Skor Guru
-                        </label>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-bold uppercase text-primary">
+                            Skor Guru
+                          </label>
 
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={scores[dimension.name] ?? 0}
-                          onChange={(event) =>
-                            handleScoreChange(
-                              dimension.name,
-                              event.target.value,
-                            )
-                          }
-                          className="
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            value={scores[dimension.name] ?? 0}
+                            onChange={(event) =>
+                              handleScoreChange(
+                                dimension.name,
+                                event.target.value,
+                              )
+                            }
+                            className="
                               h-10
                               w-full
                               rounded-lg
@@ -270,52 +326,35 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
                               focus:ring-2
                               focus:ring-primary/20
                             "
-                        />
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </section>
 
-              <p className="mt-3 text-xs leading-relaxed text-description">
-                Nilai AI ditampilkan sebagai referensi dan tidak dapat diubah.
-                Anda dapat mengubah Skor Guru pada setiap dimensi untuk
-                menentukan hasil akhir.
-              </p>
-            </section>
+              {/* =========================
+                  CATATAN
+              ========================= */}
 
-            {/* CATATAN GURU */}
+              <section>
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-text">Catatan</h3>
 
-            <section>
-              <h3 className="mb-2 text-sm font-semibold text-text">
-                Catatan Guru
-                <span className="ml-1 font-normal text-description">
-                  (opsional)
-                </span>
-              </h3>
+                  <span className="text-xs text-description">
+                    Catatan awal dari AI, dapat diedit
+                  </span>
+                </div>
 
-              <Textarea
-                value={teacherNote}
-                onChange={(event) => setTeacherNote(event.target.value)}
-                placeholder="Tuliskan catatan tambahan untuk siswa..."
-                rows={3}
-              />
-            </section>
-            {/* </div> */}
-
-            {/* =========================
-                ACTION
-            ========================= */}
-            {/* 
-            <div className="flex shrink-0 flex-wrap gap-3 border-t border-border py-5">
-              <Button variant="primary" onClick={handleSaveClick}>
-                Koreksi & Simpan Skor
-              </Button>
-
-              <Button variant="outline" onClick={handleAcceptAIClick}>
-                Terima Skor AI
-              </Button>
-            </div> */}
+                <Textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="Catatan untuk siswa..."
+                  rows={4}
+                />
+              </section>
+            </div>
           </div>
         )}
       </Modal>

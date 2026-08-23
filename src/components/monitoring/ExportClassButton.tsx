@@ -1,351 +1,237 @@
 "use client";
 
-import { useState } from "react";
 import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
-
 import Button from "@/components/ui/Button";
-
 import { MonitoringData } from "@/types/monitoring";
-import { monitoringService } from "@/services/monitoring.service";
 
 interface Props {
   data: MonitoringData;
 }
 
 export default function ExportClassButton({ data }: Props) {
-  const [loading, setLoading] = useState(false);
+  const handleExport = () => {
+    /* =====================================================
+       SHEET 1: RINGKASAN KELAS
+    ===================================================== */
 
-  const handleExport = async () => {
-    try {
-      setLoading(true);
+    const summarySheet = [
+      {
+        "Nama Kelas": data.summary.className,
+        "Jumlah Siswa": data.summary.totalStudents,
+        "Rata-rata Nilai Kelas": data.summary.averageScore,
+        "Jumlah Topik": data.topics.length,
+      },
+    ];
 
-      /* =====================================================
-         FETCH DETAIL SEMUA SISWA
-      ===================================================== */
+    /* =====================================================
+       SHEET 2: DATA SISWA
+    ===================================================== */
 
-      const studentDetails = await Promise.all(
-        data.students.map((student) =>
-          monitoringService.getStudentDetail(
-            student.id,
-            data.summary.className,
-          ),
-        ),
-      );
+    const studentsSheet = data.students.map((student, index) => ({
+      No: index + 1,
+      "Nama Siswa": student.name,
+      "Rata-rata Nilai": student.averageScore,
+      Level: student.level,
+      "Jumlah Asesmen": student.assessments?.length ?? 0,
+    }));
 
-      /* =====================================================
-         SHEET 1 — RINGKASAN KELAS
-      ===================================================== */
+    /* =====================================================
+       SHEET 3: RIWAYAT ASESMEN
+    ===================================================== */
 
-      const summarySheet = [
-        {
-          "Nama Kelas": data.summary.className,
-          "Jumlah Siswa": data.summary.totalStudents,
-          "Rata-rata Nilai Kelas": data.summary.averageScore,
-        },
-      ];
-
-      /* =====================================================
-         SHEET 2 — RINGKASAN SISWA
-      ===================================================== */
-
-      const studentsSheet = studentDetails.map((student, index) => ({
-        No: index + 1,
+    const assessmentSheet = data.students.flatMap((student) =>
+      (student.assessments ?? []).map((assessment) => ({
         "Nama Siswa": student.name,
-        "Rata-rata Nilai": student.profile.averageScore,
-        "Total Hint": student.profile.totalHints,
-        "Jumlah Materi": student.profile.totalMaterials,
-        "Jumlah Studi Kasus": student.profile.totalCases,
-      }));
+        Topik: assessment.topic,
+        "Judul Asesmen": assessment.title,
+        Nilai: assessment.score,
+        Level: assessment.level,
+        "Hint Digunakan": assessment.hintsUsed,
+        Durasi: assessment.duration,
+        Feedback: assessment.feedback,
+      })),
+    );
 
-      /* =====================================================
-         SHEET 3 — NILAI KOMPETENSI SISWA
+    /* =====================================================
+       SHEET 4: SKOR KOMPETENSI
 
-         Semua kompetensi dibuat menjadi kolom.
-      ===================================================== */
+       Menggunakan satu sumber skor:
+       - Teacher Score jika sudah di-override guru
+       - AI Score jika belum di-override
+    ===================================================== */
 
-      const competenciesSheet = studentDetails.map((student, index) => {
-        const row: Record<string, string | number> = {
-          No: index + 1,
-          "Nama Siswa": student.name,
+    const competencyScoreSheet = data.students.flatMap((student) =>
+      (student.assessments ?? []).map((assessment) => {
+        /*
+         * Tentukan skor yang digunakan.
+         *
+         * Jika assessment memiliki flagOverride dan nilainya true,
+         * gunakan teacherScore.
+         *
+         * Jika tidak, gunakan aiScore.
+         *
+         * Fallback ke objek kosong agar export tetap aman.
+         */
+
+        const assessmentData = assessment as typeof assessment & {
+          flagOverride?: boolean;
+          aiScore?: {
+            fungsionalitas?: number;
+            logika?: number;
+            syntax?: number;
+            code_style?: number;
+            dokumentasi?: number;
+            konsep?: number;
+          };
+          teacherScore?: {
+            fungsionalitas?: number;
+            logika?: number;
+            syntax?: number;
+            code_style?: number;
+            dokumentasi?: number;
+            konsep?: number;
+          };
         };
 
-        student.profile.competencies.forEach((competency) => {
-          row[competency.name] = competency.score;
-        });
+        const selectedScore =
+          assessmentData.flagOverride && assessmentData.teacherScore
+            ? assessmentData.teacherScore
+            : assessmentData.aiScore;
 
-        return row;
-      });
-
-      /* =====================================================
-         SHEET 4 — SKOR PER TOPIK
-
-         Setiap siswa dapat memiliki beberapa topik.
-      ===================================================== */
-
-      const topicScoresSheet = studentDetails.flatMap((student) =>
-        student.topicScores.map((topic, index) => ({
-          No: index + 1,
-          "Nama Siswa": student.name,
-          Topik: topic.topic,
-          "Rata-rata Skor": topic.score,
-        })),
-      );
-
-      /* =====================================================
-         SHEET 5 — RIWAYAT ASESMEN
-
-         Data berasal dari:
-         student.profile.raw
-      ===================================================== */
-
-      const assessmentHistorySheet = studentDetails.flatMap((student) =>
-        student.profile.raw.map((assessment, index) => ({
-          No: index + 1,
-
+        return {
           "Nama Siswa": student.name,
 
-          "Judul Soal": assessment.test.title,
+          Topik: assessment.topic,
 
-          Topik: assessment.test.topic.title,
+          "Judul Asesmen": assessment.title,
 
-          Nilai: assessment.averageScore,
+          Nilai: assessment.score,
 
-          Level: assessment.level,
+          Fungsionalitas: selectedScore?.fungsionalitas ?? 0,
 
-          Tanggal: assessment.createdAt,
+          Logika: selectedScore?.logika ?? 0,
 
-          "Jumlah Hint": assessment.hintUsage,
+          Syntax: selectedScore?.syntax ?? 0,
 
-          "Status Override Guru": assessment.flagOverride
-            ? "Diverifikasi Guru"
-            : "Belum Diverifikasi",
+          "Code Style": selectedScore?.code_style ?? 0,
 
-          "Saran AI": assessment.aiSuggestion ?? "-",
+          Dokumentasi: selectedScore?.dokumentasi ?? 0,
 
-          "Catatan Guru": assessment.teacherSuggestion ?? "-",
-        })),
-      );
+          Konsep: selectedScore?.konsep ?? 0,
+        };
+      }),
+    );
 
-      /* =====================================================
-         SHEET 6 — DETAIL SKOR AI
+    /* =====================================================
+       SHEET 5: SKOR TOPIK
+    ===================================================== */
 
-         Satu baris untuk setiap asesmen.
-      ===================================================== */
+    const topicSheet = data.topicScores.map((item, index) => ({
+      No: index + 1,
+      Topik: item.topic,
+      "Rata-rata Skor": item.score,
+    }));
 
-      const aiScoresSheet = studentDetails.flatMap((student) =>
-        student.profile.raw.map((assessment, index) => ({
-          No: index + 1,
+    /* =====================================================
+       MEMBUAT WORKBOOK
+    ===================================================== */
 
-          "Nama Siswa": student.name,
+    const workbook = XLSX.utils.book_new();
 
-          "Judul Soal": assessment.test.title,
+    /* =====================================================
+       MEMBUAT WORKSHEET
+    ===================================================== */
 
-          Topik: assessment.test.topic.title,
+    const summaryWorksheet = XLSX.utils.json_to_sheet(summarySheet);
 
-          Fungsionalitas: assessment.aiScore.fungsionalitas,
+    const studentsWorksheet = XLSX.utils.json_to_sheet(studentsSheet);
 
-          Logika: assessment.aiScore.logika,
+    const assessmentWorksheet = XLSX.utils.json_to_sheet(assessmentSheet);
 
-          Syntax: assessment.aiScore.syntax,
+    const competencyScoreWorksheet =
+      XLSX.utils.json_to_sheet(competencyScoreSheet);
 
-          "Code Style": assessment.aiScore.code_style,
+    const topicWorksheet = XLSX.utils.json_to_sheet(topicSheet);
 
-          Dokumentasi: assessment.aiScore.dokumentasi,
+    /* =====================================================
+       MENGATUR LEBAR KOLOM
+    ===================================================== */
 
-          Konsep: assessment.aiScore.konsep,
-        })),
-      );
+    summaryWorksheet["!cols"] = [{ wch: 25 }, { wch: 18 }];
 
-      /* =====================================================
-         SHEET 7 — DETAIL SKOR GURU
+    studentsWorksheet["!cols"] = [
+      { wch: 8 },
+      { wch: 30 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 18 },
+    ];
 
-         Jika belum diverifikasi, service saat ini
-         menggunakan skor AI sebagai nilai teacherScore.
-      ===================================================== */
+    assessmentWorksheet["!cols"] = [
+      { wch: 30 },
+      { wch: 25 },
+      { wch: 35 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 15 },
+      { wch: 60 },
+    ];
 
-      const teacherScoresSheet = studentDetails.flatMap((student) =>
-        student.profile.raw.map((assessment, index) => ({
-          No: index + 1,
+    competencyScoreWorksheet["!cols"] = [
+      { wch: 30 },
+      { wch: 25 },
+      { wch: 35 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+    ];
 
-          "Nama Siswa": student.name,
+    topicWorksheet["!cols"] = [{ wch: 8 }, { wch: 35 }, { wch: 20 }];
 
-          "Judul Soal": assessment.test.title,
+    /* =====================================================
+       MENAMBAHKAN SHEET KE WORKBOOK
+    ===================================================== */
 
-          Topik: assessment.test.topic.title,
+    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Ringkasan Kelas");
 
-          Fungsionalitas: assessment.teacherScore.fungsionalitas,
+    XLSX.utils.book_append_sheet(workbook, studentsWorksheet, "Data Siswa");
 
-          Logika: assessment.teacherScore.logika,
+    XLSX.utils.book_append_sheet(
+      workbook,
+      assessmentWorksheet,
+      "Riwayat Asesmen",
+    );
 
-          Syntax: assessment.teacherScore.syntax,
+    XLSX.utils.book_append_sheet(
+      workbook,
+      competencyScoreWorksheet,
+      "Skor Kompetensi",
+    );
 
-          "Code Style": assessment.teacherScore.code_style,
+    XLSX.utils.book_append_sheet(workbook, topicWorksheet, "Skor Topik");
 
-          Dokumentasi: assessment.teacherScore.dokumentasi,
+    /* =====================================================
+       NAMA FILE
+    ===================================================== */
 
-          Konsep: assessment.teacherScore.konsep,
-
-          Status: assessment.flagOverride ? "Diverifikasi Guru" : "Skor AI",
-        })),
-      );
-
-      /* =====================================================
-         CREATE WORKBOOK
-      ===================================================== */
-
-      const workbook = XLSX.utils.book_new();
-
-      /* =====================================================
-         CREATE WORKSHEETS
-      ===================================================== */
-
-      const summaryWorksheet = XLSX.utils.json_to_sheet(summarySheet);
-
-      const studentsWorksheet = XLSX.utils.json_to_sheet(studentsSheet);
-
-      const competenciesWorksheet = XLSX.utils.json_to_sheet(competenciesSheet);
-
-      const topicScoresWorksheet = XLSX.utils.json_to_sheet(topicScoresSheet);
-
-      const assessmentHistoryWorksheet = XLSX.utils.json_to_sheet(
-        assessmentHistorySheet,
-      );
-
-      const aiScoresWorksheet = XLSX.utils.json_to_sheet(aiScoresSheet);
-
-      const teacherScoresWorksheet =
-        XLSX.utils.json_to_sheet(teacherScoresSheet);
-
-      /* =====================================================
-         SET COLUMN WIDTHS
-      ===================================================== */
-
-      summaryWorksheet["!cols"] = [{ wch: 25 }, { wch: 18 }, { wch: 25 }];
-
-      studentsWorksheet["!cols"] = [
-        { wch: 8 },
-        { wch: 28 },
-        { wch: 20 },
-        { wch: 15 },
-        { wch: 18 },
-        { wch: 22 },
-      ];
-
-      competenciesWorksheet["!cols"] = [
-        { wch: 8 },
-        { wch: 28 },
-        { wch: 18 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 18 },
-        { wch: 18 },
-        { wch: 15 },
-      ];
-
-      topicScoresWorksheet["!cols"] = [
-        { wch: 8 },
-        { wch: 28 },
-        { wch: 30 },
-        { wch: 20 },
-      ];
-
-      assessmentHistoryWorksheet["!cols"] = [
-        { wch: 8 },
-        { wch: 28 },
-        { wch: 35 },
-        { wch: 25 },
-        { wch: 12 },
-        { wch: 18 },
-        { wch: 22 },
-        { wch: 25 },
-        { wch: 35 },
-        { wch: 35 },
-      ];
-
-      aiScoresWorksheet["!cols"] = [
-        { wch: 8 },
-        { wch: 28 },
-        { wch: 35 },
-        { wch: 25 },
-        { wch: 18 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 18 },
-        { wch: 18 },
-        { wch: 15 },
-      ];
-
-      teacherScoresWorksheet["!cols"] = [
-        { wch: 8 },
-        { wch: 28 },
-        { wch: 35 },
-        { wch: 25 },
-        { wch: 18 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 18 },
-        { wch: 18 },
-        { wch: 15 },
-        { wch: 25 },
-      ];
-
-      /* =====================================================
-         APPEND SHEETS
-      ===================================================== */
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        summaryWorksheet,
-        "Ringkasan Kelas",
-      );
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        studentsWorksheet,
-        "Ringkasan Siswa",
-      );
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        competenciesWorksheet,
-        "Kompetensi Siswa",
-      );
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        topicScoresWorksheet,
-        "Skor per Topik",
-      );
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        assessmentHistoryWorksheet,
-        "Riwayat Asesmen",
-      );
-
-      XLSX.utils.book_append_sheet(workbook, aiScoresWorksheet, "Skor AI");
-
-      XLSX.utils.book_append_sheet(
-        workbook,
-        teacherScoresWorksheet,
-        "Skor Guru",
-      );
-
-      /* =====================================================
-         FILE NAME
-      ===================================================== */
-
-      const fileName = `Monitoring-${data.summary.className
+    const className =
+      data.summary.className
         .replace(/\s+/g, "-")
-        .replace(/[^a-zA-Z0-9-]/g, "")}.xlsx`;
+        .replace(/[^a-zA-Z0-9-]/g, "") || "Kelas";
 
-      XLSX.writeFile(workbook, fileName);
-    } catch (error) {
-      console.error("Gagal export data kelas:", error);
-    } finally {
-      setLoading(false);
-    }
+    const fileName = `Monitoring-Kelas-${className}.xlsx`;
+
+    /* =====================================================
+       DOWNLOAD FILE
+    ===================================================== */
+
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (
@@ -353,9 +239,8 @@ export default function ExportClassButton({ data }: Props) {
       variant="outline"
       startIcon={<Download size={17} />}
       onClick={handleExport}
-      disabled={loading}
     >
-      {loading ? "Menyiapkan Data..." : "Export Data Kelas"}
+      Export Data Kelas
     </Button>
   );
 }
