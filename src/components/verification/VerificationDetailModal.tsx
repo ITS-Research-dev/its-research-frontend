@@ -76,23 +76,12 @@ export default function VerificationDetailModal({
           </div>
         </section>
 
-        {/* AI Note */}
+        {/* Catatan */}
         <section className="mt-7">
-          <h3 className="mb-3 text-base font-semibold text-text">
-            Catatan dari AI
-          </h3>
-
-          <p className="text-sm leading-relaxed text-text">{data.aiNote}</p>
-        </section>
-
-        {/* Teacher Note */}
-        <section className="mt-7">
-          <h3 className="mb-3 text-base font-semibold text-text">
-            Catatan Guru
-          </h3>
+          <h3 className="mb-3 text-base font-semibold text-text">Catatan</h3>
 
           <p className="text-sm leading-relaxed text-text">
-            {data.teacherNote || "-"}
+            {data.aiNote || "-"}
           </p>
         </section>
       </div>
