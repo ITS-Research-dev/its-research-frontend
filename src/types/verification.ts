@@ -8,19 +8,24 @@ export interface VerificationDimension {
 
 export interface VerificationItem {
   id: string;
+
   studentName: string;
+
   questionTitle: string;
+
+  userAnswer: string;
+
   aiScore: number;
+
   status: VerificationStatus;
 
   aiNote: string;
 
   dimensions: VerificationDimension[];
-
-  teacherNote?: string;
 }
 
 export interface VerificationDetail extends VerificationItem {
   finalScores: VerificationDimension[];
+
   aiAccuracy: number;
 }
