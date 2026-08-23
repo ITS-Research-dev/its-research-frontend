@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CompetencyScore } from "@/types/asessment";
 import { CaseDetail as CaseDetailType, RunHistory } from "@/types/case";
+import { QueueItem } from "@/types/queue";
 
 import CaseHeader from "./CaseHeader";
 import LeftPanel from "./LeftPanel";
@@ -41,8 +42,6 @@ export default function CaseDetail({ detail }: Props) {
 
   const [running, setRunning] = useState(false);
 
-  const [assessing, setAssessing] = useState(false);
-
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   const [failedRunCount, setFailedRunCount] = useState(0);
@@ -54,6 +53,10 @@ export default function CaseDetail({ detail }: Props) {
     title: "",
     description: "",
   });
+
+  // ===== Submission Queue State =====
+  const [submissionQueue, setSubmissionQueue] = useState<QueueItem[]>([]);
+  const processingRef = useRef(false);
 
   useEffect(() => {
     const initialAnswers: Record<string, string> = {};
@@ -74,6 +77,8 @@ export default function CaseDetail({ detail }: Props) {
 
     setShowSubmitModal(false);
 
+    setSubmissionQueue([]);
+
     setAlert({
       open: false,
       title: "",
@@ -87,13 +92,41 @@ export default function CaseDetail({ detail }: Props) {
 
   const currentResult = questionResults[question.id];
 
-  const submittedQuestions = useMemo(
+  const submittedQuestions = useMemo(() => {
+    const resultIds = Object.keys(questionResults).filter(
+      (id) => questionResults[id].submitted,
+    );
+    const queuedIds = submissionQueue
+      .filter((i) => i.status === "queued" || i.status === "running")
+      .map((i) => i.questionId);
+    return [...new Set([...resultIds, ...queuedIds])];
+  }, [questionResults, submissionQueue]);
+
+  // Check if current question is already submitted (either has result or is in queue)
+  const isCurrentQueued = useMemo(
     () =>
-      Object.keys(questionResults).filter(
-        (id) => questionResults[id].submitted,
+      submissionQueue.some(
+        (item) =>
+          item.questionId === question.id &&
+          (item.status === "queued" || item.status === "running"),
       ),
-    [questionResults],
+    [submissionQueue, question.id],
   );
+
+  const isCurrentSubmitted = currentResult?.submitted || isCurrentQueued;
+
+  // Check if there's a running submission (for submit button label)
+  const hasRunningSubmission = useMemo(
+    () => submissionQueue.some((item) => item.status === "running"),
+    [submissionQueue],
+  );
+
+  // Get queue position for the current question (0 if not in queue)
+  const currentQueuePosition = useMemo(() => {
+    const queuedItems = submissionQueue.filter((i) => i.status === "queued");
+    const idx = queuedItems.findIndex((i) => i.questionId === question.id);
+    return idx >= 0 ? idx + 1 : 0;
+  }, [submissionQueue, question.id]);
 
   useEffect(() => {
     setFailedRunCount(0);
@@ -137,41 +170,151 @@ export default function CaseDetail({ detail }: Props) {
     }
   };
 
-  const handleSubmit = async () => {
-    setShowSubmitModal(false);
-    setAssessing(true);
+  // ===== Queue Processor =====
+  const currentRunningIdRef = useRef<string | null>(null);
 
-    try {
-      const response = await caseService.submitCase({
-        soal: question.description,
-        expectedOutput: question.expectedOutput,
-        studentCode: answers[question.id] ?? "",
-        hintUsage: openedHints.length,
-      });
+  const processNextInQueue = useCallback(() => {
+    if (processingRef.current) return;
 
-      const competencies = mapScoringToCompetencies(response.aiScore);
+    setSubmissionQueue((prev) => {
+      const hasRunning = prev.some((i) => i.status === "running");
+      if (hasRunning) return prev;
 
-      setQuestionResults((prev) => ({
-        ...prev,
+      const nextQueued = prev.find((i) => i.status === "queued");
+      if (!nextQueued) return prev;
 
-        [question.id]: {
+      processingRef.current = true;
+      currentRunningIdRef.current = nextQueued.id;
+
+      return prev.map((item) =>
+        item.id === nextQueued.id
+          ? { ...item, status: "running" as const, startedAt: Date.now() }
+          : item,
+      );
+    });
+  }, []);
+
+  // Effect to process the running item — only fires when currentRunningIdRef changes
+  useEffect(() => {
+    const runningItem = submissionQueue.find((i) => i.status === "running");
+
+    // Only process if there's a running item and it matches our tracked ID
+    if (
+      !runningItem ||
+      !processingRef.current ||
+      runningItem.id !== currentRunningIdRef.current
+    ) {
+      return;
+    }
+
+    // Prevent re-processing: clear the ref immediately so subsequent
+    // renders of this effect won't re-trigger for the same item
+    const itemToProcess = runningItem;
+    const itemId = currentRunningIdRef.current;
+    currentRunningIdRef.current = null;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const response = await caseService.submitCase(itemToProcess.payload);
+
+        if (cancelled) return;
+
+        const competencies = mapScoringToCompetencies(response.aiScore);
+
+        const result: QuestionResult = {
           submitted: true,
           score: Math.round(response.overallScore),
           level: response.level,
           feedback: response.aiSuggestion,
           competencies,
-        },
-      }));
-    } catch {
-      setAlert({
-        open: true,
-        title: "Gagal Menilai",
-        description:
-          "Terjadi kesalahan saat menilai jawaban. Pastikan server AI aktif dan coba lagi.",
-      });
-    } finally {
-      setAssessing(false);
+        };
+
+        // Store result in questionResults
+        setQuestionResults((prev) => ({
+          ...prev,
+          [itemToProcess.questionId]: result,
+        }));
+
+        // Mark queue item as completed
+        setSubmissionQueue((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  status: "completed" as const,
+                  completedAt: Date.now(),
+                  result,
+                }
+              : item,
+          ),
+        );
+      } catch {
+        if (cancelled) return;
+
+        // Mark queue item as failed
+        setSubmissionQueue((prev) =>
+          prev.map((item) =>
+            item.id === itemId
+              ? {
+                  ...item,
+                  status: "failed" as const,
+                  completedAt: Date.now(),
+                  error:
+                    "Terjadi kesalahan saat menilai jawaban. Pastikan server AI aktif dan coba lagi.",
+                }
+              : item,
+          ),
+        );
+      } finally {
+        if (!cancelled) {
+          processingRef.current = false;
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [submissionQueue]);
+
+  // When a submission finishes, check if there's more to process
+  useEffect(() => {
+    if (!processingRef.current) {
+      const hasQueued = submissionQueue.some((i) => i.status === "queued");
+      const hasRunning = submissionQueue.some((i) => i.status === "running");
+      if (hasQueued && !hasRunning) {
+        processNextInQueue();
+      }
     }
+  }, [submissionQueue, processNextInQueue]);
+
+  // ===== Submit Handler (now queues instead of blocking) =====
+  const handleSubmit = () => {
+    setShowSubmitModal(false);
+
+    const newItem: QueueItem = {
+      id: crypto.randomUUID(),
+      questionId: question.id,
+      questionTitle: `Soal ${question.order}`,
+      questionIndex: currentQuestion,
+      status: "queued",
+      payload: {
+        soal: question.description,
+        expectedOutput: question.expectedOutput,
+        studentCode: answers[question.id] ?? "",
+        hintUsage: openedHints.length,
+      },
+      submittedAt: Date.now(),
+    };
+
+    setSubmissionQueue((prev) => [...prev, newItem]);
+  };
+
+  // ===== Queue Navigation =====
+  const handleQueueItemClick = (questionIndex: number) => {
+    setCurrentQuestion(questionIndex);
   };
 
   const handleUseHint = () => {
@@ -199,8 +342,10 @@ export default function CaseDetail({ detail }: Props) {
 
           <CodeEditor
             code={answers[question.id] ?? ""}
-            disabled={currentResult?.submitted ?? false}
-            running={running || assessing}
+            disabled={isCurrentSubmitted}
+            running={running}
+            hasQueuedSubmission={hasRunningSubmission}
+            queuePosition={currentQueuePosition}
             onCodeChange={handleCodeChange}
             onRun={handleRun}
             onSubmit={() => setShowSubmitModal(true)}
@@ -211,7 +356,9 @@ export default function CaseDetail({ detail }: Props) {
             result={currentResult}
             failedRunCount={failedRunCount}
             openedHints={openedHints}
-            assessing={assessing}
+            assessing={isCurrentQueued}
+            queueItems={submissionQueue}
+            onQueueItemClick={handleQueueItemClick}
             onUseHint={handleUseHint}
           />
         </div>
@@ -223,7 +370,7 @@ export default function CaseDetail({ detail }: Props) {
         description="Kode kamu akan dinilai oleh AI. Proses ini bisa membutuhkan waktu beberapa menit. Setelah disubmit, jawaban tidak dapat diubah kembali."
         confirmText="Submit & Nilai"
         cancelText="Batal"
-        loading={assessing}
+        loading={false}
         onClose={() => setShowSubmitModal(false)}
         onConfirm={handleSubmit}
       />
