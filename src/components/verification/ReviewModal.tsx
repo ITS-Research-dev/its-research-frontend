@@ -233,7 +233,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
                   <pre className="overflow-x-auto bg-[#1e1e1e] p-5 text-sm leading-relaxed text-gray-100">
                     <code>
-                      {data.userAnswer ?? "Jawaban siswa tidak tersedia."}
+                      {data.code ?? "Jawaban siswa tidak tersedia."}
                     </code>
                   </pre>
                 </div>

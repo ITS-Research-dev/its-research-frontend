@@ -29,6 +29,10 @@ export function useMaterialDetail(id: string) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const response = await materialService.getDetailMateri(id);
     setMaterial(response);

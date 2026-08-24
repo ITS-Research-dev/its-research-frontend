@@ -1,4 +1,3 @@
-// hooks/useMaterial.ts
 "use client";
 
 import bankService from "@/services/bank.service";
@@ -33,4 +32,40 @@ export function useBank() {
   }, [load]);
 
   return { materials, questions, loading, reload: load };
+}
+
+export function useBankMateriDetail(id: string) {
+  const [material, setMaterial] = useState<BankMaterial | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const response = await bankService.getMaterial(id);
+    setMaterial(response);
+    setLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { material, loading, reload: load };
+}
+
+export function useBankQuestionDetail(id: string) {
+  const [question, setQuestion] = useState<BankQuestion>();
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const response = await bankService.getQuestion(id);
+    setQuestion(response);
+    setLoading(false);
+  }, [id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { question, loading, reload: load };
 }

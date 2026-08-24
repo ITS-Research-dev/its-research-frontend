@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 
@@ -6,25 +8,22 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import MarkdownRenderer from "@/components/bank/MarkdownRenderer";
 
-import { bankData } from "@/data/bank";
+import Loading from "@/components/common/Loading";
+import { useBankMateriDetail } from "@/hooks/useBank";
+import { useParams } from "next/navigation";
 
 interface Props {
-  params: Promise<{
-    id: string;
-  }>;
   backHref?: string;
   backLabel?: string;
 }
 
-export default async function MaterialDetailPage({
-  params,
+export default function MaterialDetailPage({
   backHref = "/teacher/bank",
   backLabel = "Kembali ke Bank Materi",
 }: Props) {
-  const { id } = await params;
-
-  const material = bankData.materials.find((item) => item.id === id);
-
+  const { id } = useParams<{ id: string }>();
+  const { material, loading } = useBankMateriDetail(id);
+  if (loading) return <Loading open={true} text="Memuat materi..." />;
   if (!material) {
     return (
       <div className="space-y-6">

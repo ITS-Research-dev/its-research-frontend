@@ -24,6 +24,20 @@ class BankService {
     return response.data;
   }
 
+  async getMaterial(id: string): Promise<BankMaterial> {
+    const response = await api.get<BankMaterial>(
+      ROUTES.API.TEACHER.BANK_MATERI + "/" + id,
+    );
+    return response.data;
+  }
+
+  async getQuestion(id: string): Promise<BankQuestion> {
+    const response = await api.get<BankQuestion>(
+      ROUTES.API.TEACHER.BANK_SOAL + "/" + id,
+    );
+    return response.data;
+  }
+
   async createMaterial(
     idClass: string,
     data: MaterialFormData,

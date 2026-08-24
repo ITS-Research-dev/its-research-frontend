@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, Code2, Lightbulb } from "lucide-react";
 
@@ -6,24 +8,23 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 
 import { bankData } from "@/data/bank";
+import { useBankQuestionDetail } from "@/hooks/useBank";
+import { useParams } from "next/navigation";
+import Loading from "@/components/common/Loading";
 
 interface Props {
-  params: Promise<{
-    id: string;
-  }>;
   backHref?: string;
   backLabel?: string;
 }
 
-export default async function QuestionDetailPage({
-  params,
+export default function QuestionDetailPage({
   backHref = "/teacher/bank",
   backLabel = "Kembali ke Bank Soal",
 }: Props) {
-  const { id } = await params;
+  const { id } = useParams<{ id: string }>();
 
-  const question = bankData.questions.find((item) => item.id === id);
-
+  const { question, loading } = useBankQuestionDetail(id);
+  if (loading) return <Loading open={true} text="Memuat materi..." />;
   if (!question) {
     return (
       <div className="space-y-6">
