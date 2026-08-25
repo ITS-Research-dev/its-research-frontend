@@ -256,7 +256,8 @@ export default function ReferenceUpload({
       );
 
       const assignedMaterialId =
-        matchedBankMaterial?.id || (materials.length > 0 ? materials[0].id : "");
+        matchedBankMaterial?.id ||
+        (materials.length > 0 ? materials[0].id : "");
 
       const source: GeneratedSource = {
         chapter: currentQ["sub-theme"] || matchedItem.title,
@@ -280,7 +281,9 @@ export default function ReferenceUpload({
       setDraft(questionDraft);
       setStep("preview");
     } catch (err: any) {
-      setErrorMessage(err?.message || "Gagal generate konten. Silakan coba lagi.");
+      setErrorMessage(
+        err?.message || "Gagal generate konten. Silakan coba lagi.",
+      );
     } finally {
       setGenerating(null);
     }
@@ -392,8 +395,8 @@ export default function ReferenceUpload({
           </div>
 
           <p className="mt-2 text-description">
-            Unggah softfile buku (PDF), sistem akan mengekstrak materi Python dan
-            membuat draf materi serta latihan soal secara otomatis.
+            Unggah softfile buku (PDF), sistem akan mengekstrak materi Python
+            dan membuat draf materi serta latihan soal secara otomatis.
           </p>
 
           <input
@@ -479,7 +482,7 @@ export default function ReferenceUpload({
               <Button
                 className="bg-primary text-white hover:bg-primary/90"
                 onClick={handleProcessDocument}
-                >
+              >
                 Proses Dokumen dengan Gemini AI →
               </Button>
             </div>
@@ -501,9 +504,9 @@ export default function ReferenceUpload({
 
           <p className="max-w-sm text-sm text-description">
             Sistem sedang membaca isi{" "}
-            <span className="font-medium text-text">{file?.name}</span>, menyaring
-            materi Python, serta menghasilkan draf materi & soal. Mohon tunggu
-            sebentar.
+            <span className="font-medium text-text">{file?.name}</span>,
+            menyaring materi Python, serta menghasilkan draf materi & soal.
+            Mohon tunggu sebentar.
           </p>
         </div>
       )}
@@ -758,7 +761,7 @@ export default function ReferenceUpload({
                     className="
                       prose
                       prose-sm
-                      max-w-none
+                      w-full
                       text-text
                       prose-headings:text-text
                       prose-p:text-description

@@ -27,8 +27,6 @@ export default function FeedbackCard({ feedback }: Props) {
       {/* Body */}
       <div className="px-6 py-6">
         <div className="flex items-start gap-3 rounded-2xl bg-background p-5">
-          <Sparkles size={20} className="mt-1 text-primary" />
-
           <p className="leading-7 text-description">{feedback}</p>
         </div>
       </div>
