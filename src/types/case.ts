@@ -49,6 +49,7 @@ export interface CaseDetail extends Case {
 export interface RunCodePayload {
   questionId: string;
   code: string;
+  stdin?: string;
 }
 
 export interface RunCodeResponse {

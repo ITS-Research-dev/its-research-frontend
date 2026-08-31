@@ -28,9 +28,38 @@ interface Props {
 
   onCodeChange: (value: string) => void;
 
-  onRun: () => Promise<RunResult>;
+  onRun: (stdin?: string) => Promise<RunResult>;
 
   onSubmit: () => void;
+}
+
+export function extractInputPrompts(code: string): string[] {
+  const lines = code.split("\n").map((line) => {
+    const commentIdx = line.indexOf("#");
+    return commentIdx >= 0 ? line.slice(0, commentIdx) : line;
+  });
+  const cleanCode = lines.join("\n");
+
+  const regex = /input\s*\(\s*(?:(['"`]{1,3})([\s\S]*?)\1)?\s*\)/g;
+  const prompts: string[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(cleanCode)) !== null) {
+    const promptText = match[2] !== undefined ? match[2] : "";
+    prompts.push(promptText);
+  }
+
+  return prompts;
+}
+
+function formatRemainingStdout(stdout: string, prompts: string[]): string {
+  let remaining = stdout;
+  for (const prompt of prompts) {
+    if (prompt && remaining.includes(prompt)) {
+      remaining = remaining.replace(prompt, "");
+    }
+  }
+  return remaining.trim();
 }
 
 export default function CodeEditor({
@@ -52,20 +81,25 @@ export default function CodeEditor({
 
     terminalRef.current.writeln("> python main.py");
     terminalRef.current.writeln("");
-    terminalRef.current.writeln("Running...");
-    terminalRef.current.writeln("");
 
     try {
-      const result = await onRun();
+      const prompts = extractInputPrompts(code);
+      const inputs: string[] = [];
 
-      terminalRef.current.clear();
+      for (const prompt of prompts) {
+        const userInput = await terminalRef.current.readLine(prompt);
+        inputs.push(userInput);
+      }
 
-      terminalRef.current.writeln("> python main.py");
-      terminalRef.current.writeln("");
+      const stdin = inputs.length > 0 ? inputs.join("\n") + "\n" : undefined;
 
-      if (result.stdout) {
+      const result = await onRun(stdin);
+
+      const remainingOutput = formatRemainingStdout(result.stdout || "", prompts);
+
+      if (remainingOutput) {
         terminalRef.current.write("\x1b[32m");
-        terminalRef.current.writeln(result.stdout);
+        terminalRef.current.writeln(remainingOutput);
         terminalRef.current.write("\x1b[0m");
       }
 
@@ -79,7 +113,12 @@ export default function CodeEditor({
       terminalRef.current.writeln(
         `Process finished with exit code ${result.stderr ? 1 : 0}`,
       );
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === "Cancelled") {
+        terminalRef.current.writeln("\nExecution cancelled.");
+        return;
+      }
+
       terminalRef.current.write("\x1b[31m");
       terminalRef.current.writeln("Unexpected Error");
       terminalRef.current.write("\x1b[0m");

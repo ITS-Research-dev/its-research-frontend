@@ -63,6 +63,7 @@ class CaseService {
   async runCode(payload: RunCodePayload): Promise<RunCodeResponse> {
     const response = await api.post<RunCodeResponse>(ROUTES.API.STUDENT.RUN_CODE, {
       code: payload.code,
+      stdin: payload.stdin,
     });
     return response.data;
   }
