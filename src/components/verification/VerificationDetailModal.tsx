@@ -24,7 +24,7 @@ export default function VerificationDetailModal({
         {/* Header Informasi */}
         <div>
           <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            XI RPL 2
+            {data.className || "Kelas"}
           </p>
 
           <h2 className="mt-2 text-2xl font-bold text-text">

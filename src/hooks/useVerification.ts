@@ -3,16 +3,23 @@
 import { useCallback, useEffect, useState } from "react";
 import verificationService, { ReviewPayload } from "@/services/verification.service";
 import { VerificationDetail } from "@/types/verification";
+import { useClassStore } from "@/store/class.store";
 
 export function useVerification() {
   const [verifications, setVerifications] = useState<VerificationDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const selectedClassId = useClassStore((s) => s.selectedClassId);
 
   const fetchQueue = useCallback(async () => {
+    if (!selectedClassId) {
+      setVerifications([]);
+      return [];
+    }
+
     setError(null);
     try {
-      const data = await verificationService.getQueue();
+      const data = await verificationService.getQueue(selectedClassId);
       setVerifications(data);
       return data;
     } catch (err: any) {
@@ -20,9 +27,15 @@ export function useVerification() {
       setError(err?.message || "Failed to load verifications");
       throw err;
     }
-  }, []);
+  }, [selectedClassId]);
 
   const load = useCallback(async () => {
+    if (!selectedClassId) {
+      setLoading(false);
+      setVerifications([]);
+      return;
+    }
+
     setLoading(true);
     try {
       await fetchQueue();
@@ -31,7 +44,7 @@ export function useVerification() {
     } finally {
       setLoading(false);
     }
-  }, [fetchQueue]);
+  }, [fetchQueue, selectedClassId]);
 
   useEffect(() => {
     load();
@@ -49,7 +62,9 @@ export function useVerification() {
   const totalReviewed = verifications.filter(
     (item) => item.status === "Selesai",
   ).length;
-  const totalStudents = Math.max(35, totalSubmitted);
+  const totalStudents = new Set(
+    verifications.map((item) => item.studentId || item.studentName),
+  ).size;
 
   return {
     verifications,

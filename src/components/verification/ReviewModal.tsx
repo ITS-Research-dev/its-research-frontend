@@ -163,7 +163,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
             <div className="shrink-0 border-b border-border pb-5">
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                Tinjau Asesmen
+                {data.className ? `${data.className} · Tinjau Asesmen` : "Tinjau Asesmen"}
               </p>
 
               <h2 className="mt-2 text-xl font-bold text-text">
