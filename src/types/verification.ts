@@ -13,13 +13,25 @@ export interface VerificationItem {
 
   questionTitle: string;
 
-  userAnswer: string;
+  userAnswer?: string;
+
+  code?: string;
 
   aiScore: number;
 
   status: VerificationStatus;
 
   aiNote: string;
+
+  teacherNote?: string;
+
+  className?: string;
+
+  studentId?: string;
+
+  questionId?: string;
+
+  createdAt?: string;
 
   dimensions: VerificationDimension[];
 }

@@ -13,6 +13,7 @@ import { VerificationDetail, VerificationItem } from "@/types/verification";
 import { ReviewPayload } from "@/services/verification.service";
 import ReviewModal from "./ReviewModal";
 import VerificationDetailModal from "./VerificationDetailModal";
+import AlertModal from "@/components/common/AlertModal";
 
 interface Props {
   data: VerificationItem[];
@@ -57,6 +58,18 @@ export default function VerificationTable({
   const [selectedReview, setSelectedReview] = useState<VerificationItem>();
 
   const [selectedDetail, setSelectedDetail] = useState<VerificationDetail>();
+
+  const [alertModal, setAlertModal] = useState<{
+    open: boolean;
+    type: "success" | "error";
+    title: string;
+    description: string;
+  }>({
+    open: false,
+    type: "success",
+    title: "",
+    description: "",
+  });
 
   const filtered = useMemo(() => {
     return data.filter((item) => {
@@ -167,14 +180,36 @@ export default function VerificationTable({
           setSelectedReview(undefined);
         }}
         onSave={async (id, scores, teacherNote, decision) => {
-          if (onReviewSubmit) {
-            await onReviewSubmit(id, {
-              decision,
-              scores,
-              teacherNote,
+          try {
+            if (onReviewSubmit) {
+              await onReviewSubmit(id, {
+                decision,
+                scores,
+                teacherNote,
+              });
+            }
+            setSelectedReview(undefined);
+            setAlertModal({
+              open: true,
+              type: "success",
+              title: "Verifikasi Nilai Berhasil",
+              description:
+                decision === "terima"
+                  ? "Skor AI untuk asesmen ini berhasil diverifikasi dan disimpan."
+                  : "Koreksi skor dan catatan untuk asesmen ini berhasil disimpan.",
+            });
+          } catch (err: any) {
+            console.error("Failed to submit review:", err);
+            setAlertModal({
+              open: true,
+              type: "error",
+              title: "Verifikasi Nilai Gagal",
+              description:
+                err?.response?.data?.message ||
+                err?.message ||
+                "Terjadi kesalahan saat menyimpan verifikasi nilai.",
             });
           }
-          setSelectedReview(undefined);
         }}
       />
 
@@ -185,6 +220,23 @@ export default function VerificationTable({
         onClose={() => {
           setSelectedDetail(undefined);
         }}
+      />
+
+      {/* Alert Modal */}
+      <AlertModal
+        open={alertModal.open}
+        title={alertModal.title}
+        description={alertModal.description}
+        type={alertModal.type}
+        buttonText="OK"
+        onClose={() =>
+          setAlertModal({
+            open: false,
+            type: "success",
+            title: "",
+            description: "",
+          })
+        }
       />
     </>
   );

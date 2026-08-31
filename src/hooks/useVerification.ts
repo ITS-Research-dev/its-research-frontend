@@ -9,32 +9,37 @@ export function useVerification() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const fetchQueue = useCallback(async () => {
     setError(null);
     try {
       const data = await verificationService.getQueue();
       setVerifications(data);
+      return data;
     } catch (err: any) {
       console.error("Error fetching verifications:", err);
       setError(err?.message || "Failed to load verifications");
+      throw err;
+    }
+  }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      await fetchQueue();
+    } catch {
+      // error handled in fetchQueue
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchQueue]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   const submitReview = async (id: string, payload: ReviewPayload) => {
-    try {
-      await verificationService.submitReview(id, payload);
-    } catch (err) {
-      console.error("Failed to submit review:", err);
-    } finally {
-      await load();
-    }
+    await verificationService.submitReview(id, payload);
+    await fetchQueue();
   };
 
   const totalSubmitted = verifications.length;
