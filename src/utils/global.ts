@@ -1,5 +1,5 @@
 export function RoundNumber (score: number): number {
-  if (score === 0) return 0; // hindari division by zero / NaN
+  if (!score || isNaN(score) || !isFinite(score)) return 0; // hindari NaN / Infinity / null / undefined
   return Number(score.toFixed(0));
 }
 

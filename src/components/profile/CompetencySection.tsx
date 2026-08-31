@@ -7,12 +7,13 @@ import {
   BookOpen,
   PenTool,
   Lightbulb,
+  BarChart2,
 } from "lucide-react";
 
 import CompetencyCard from "./CompetencyCard";
 
 import { CompetencyScore } from "@/types/asessment";
-import { RoundNumber, TitleCase, } from "@/utils/global";
+import { RoundNumber, TitleCase } from "@/utils/global";
 
 interface Props {
   competencies: CompetencyScore[];
@@ -33,20 +34,31 @@ export default function CompetencySection({ competencies, totalCase }: Props) {
     <Card className="p-7">
       <h2 className="mb-6 text-xl font-bold text-text">Rata-rata Kompetensi</h2>
 
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3">
-        {competencies.map((item) => {
-          const Icon = iconMap[item.name as keyof typeof iconMap] ?? Brain;
+      {competencies.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-surface/50 py-12">
+          <h2 className="font-semibold text-xl text-text">
+            Belum Ada Data Kompetensi
+          </h2>
+          <p className="text-md text-description">
+            Data kompetensi akan muncul setelah asesmen selesai dinilai.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3">
+          {competencies.map((item) => {
+            const Icon = iconMap[item.name as keyof typeof iconMap] ?? Brain;
 
-          return (
-            <CompetencyCard
-              key={item.name}
-              title={TitleCase(item.name)}
-              value={RoundNumber(item.score / totalCase)}
-              icon={Icon}
-          />
-          );
-        })}
-      </div>
+            return (
+              <CompetencyCard
+                key={item.name}
+                title={TitleCase(item.name)}
+                value={RoundNumber(totalCase > 0 ? item.score / totalCase : 0)}
+                icon={Icon}
+              />
+            );
+          })}
+        </div>
+      )}
     </Card>
   );
 }

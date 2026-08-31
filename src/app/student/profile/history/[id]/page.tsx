@@ -1,4 +1,5 @@
 import AssessmentDetail from "@/components/profile/AssessmentDetail";
+import { AssessmentDetail as AssessmentDetailType } from "@/types/asessment";
 
 interface Props {
   params: Promise<{

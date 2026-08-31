@@ -14,7 +14,7 @@ import { useProfileSummary } from "@/hooks/useProfile";
 
 export default function ProfilePage() {
   const { summary, loading } = useProfileSummary();
-  
+
   if (loading || !summary) {
     return <Loading open={true} text="Memuat profil..." />;
   }
@@ -28,13 +28,22 @@ export default function ProfilePage() {
 
       <ProfileStats summary={summary} />
 
-      <CompetencySection competencies={summary.competencies} totalCase={summary.totalCases} />
+      <CompetencySection
+        competencies={summary.competencies}
+        totalCase={summary.totalCases}
+      />
 
-      <CompetencyTrendChart entries={summary.competencyTrend} topics={summary.nameMaterials} />
+      <CompetencyTrendChart
+        entries={summary.competencyTrend}
+        topics={summary.nameMaterials}
+      />
 
-      <LevelTrendChart entries={summary.levelTrend} topics={summary.nameMaterials} />
+      <LevelTrendChart
+        entries={summary.levelTrend}
+        topics={summary.nameMaterials}
+      />
 
-      <AssessmentHistory data={summary.raw} topics={summary.nameMaterials}/>
+      <AssessmentHistory data={summary.raw} topics={summary.nameMaterials} />
     </div>
   );
 }

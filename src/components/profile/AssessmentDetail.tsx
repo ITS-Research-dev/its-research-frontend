@@ -62,13 +62,6 @@ export default function AssessmentDetail({
   backHref = "/student/profile",
   backLabel = "Kembali ke Profil",
 }: Props) {
-  /**
-   * Jika initialDetail diberikan,
-   * tidak perlu memanggil API.
-   *
-   * Ini digunakan oleh Teacher Monitoring
-   * karena sementara masih menggunakan dummy data.
-   */
   const { detail: apiDetail, loading } = useAssessmentDetail(
     id,
     !initialDetail,
@@ -82,10 +75,20 @@ export default function AssessmentDetail({
 
   if (!detail) {
     return (
-      <Card className="p-10 text-center">
-        <h2 className="text-xl font-bold text-text">Data tidak ditemukan</h2>
-
-        <p className="mt-3 text-description">Detail asesmen tidak tersedia.</p>
+      <Card className="flex flex-col items-center justify-center gap-4 p-16 text-center">
+        <h2 className="text-xl font-semibold text-text">
+          Data Tidak Ditemukan
+        </h2>
+        <p className="text-description text-md">
+          Detail asesmen tidak tersedia atau belum diproses.
+        </p>
+        <Link
+          href={backHref}
+          className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+        >
+          <ArrowLeft size={16} />
+          {backLabel}
+        </Link>
       </Card>
     );
   }
