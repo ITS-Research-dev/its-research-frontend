@@ -16,6 +16,7 @@ import {
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Dropdown from "@/components/ui/DropDown";
+import AlertModal from "@/components/common/AlertModal";
 
 import {
   BankMaterial,
@@ -27,6 +28,8 @@ import {
 import { MaterialFormData } from "@/components/bank/MaterialFormModal";
 import { QuestionFormData } from "@/components/bank/QuestionFormModal";
 import bankService from "@/services/bank.service";
+import { useClassStore } from "@/store/class.store";
+import { storage } from "@/utils/storage";
 
 /* =====================================================
    TYPE LOKAL (alur reference → generate)
@@ -314,48 +317,80 @@ export default function ReferenceUpload({
     setErrorMessage(null);
 
     try {
-      if (draft.type === "material") {
-        if (!selectedClassId) {
-          throw new Error(
-            "Kelas belum dipilih. Silakan pilih kelas terlebih dahulu.",
-          );
-        }
+      const storeClassId = useClassStore.getState().selectedClassId;
+      const activeClassId = selectedClassId || storeClassId || storage.getClass()[0]?.value;
 
-        await bankService.createMaterial(selectedClassId, {
+      if (!activeClassId) {
+        throw new Error(
+          "Kelas belum dipilih. Silakan pilih kelas terlebih dahulu.",
+        );
+      }
+
+      if (draft.type === "material") {
+        await bankService.createMaterial(activeClassId, {
           title: draft.title,
           description: draft.description,
           content: draft.content,
-          startDate: draft.startDate,
-          status: draft.status,
+          startDate: draft.startDate || new Date().toISOString().slice(0, 10),
+          status: draft.status || "active",
         });
       } else {
         // Question
-        if (!draft.materialId) {
+        let targetMaterialId = draft.materialId;
+
+        if (!targetMaterialId) {
+          // Look for matching material by title
+          const matchedBankMaterial = materials.find(
+            (m) =>
+              m.title.toLowerCase().includes(draft.title.toLowerCase()) ||
+              draft.title.toLowerCase().includes(m.title.toLowerCase()),
+          );
+
+          if (matchedBankMaterial) {
+            targetMaterialId = matchedBankMaterial.id;
+          } else if (materials.length > 0) {
+            targetMaterialId = materials[0].id;
+          } else {
+            // Auto-create material if none exists in this class
+            const topicTitle = selectedTopic?.title || draft.title;
+            const newMaterial = await bankService.createMaterial(activeClassId, {
+              title: topicTitle,
+              description: `Materi pembelajaran mengenai ${topicTitle}.`,
+              content: `# ${topicTitle}\n\n`,
+              startDate: new Date().toISOString().slice(0, 10),
+              status: "active",
+            });
+            targetMaterialId = newMaterial.id;
+          }
+        }
+
+        if (!targetMaterialId) {
           throw new Error(
             "Topik Materi wajib dipilih untuk menghubungkan soal ini dengan Bank Materi.",
           );
         }
 
         await bankService.createQuestion({
-          materialId: draft.materialId,
+          materialId: targetMaterialId,
           title: draft.title,
           description: draft.description,
           expectedOutput: draft.expectedOutput,
           hint1: draft.hint1,
           hint2: draft.hint2,
           hint3: draft.hint3,
-          status: draft.status,
+          status: draft.status || "active",
         });
       }
 
       onPublished?.();
       setPublishSuccess(true);
     } catch (err: any) {
+      console.error("Publish error:", err);
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         "Gagal mempublikasikan hasil. Silakan coba lagi.";
-      setErrorMessage(msg);
+      setErrorMessage(Array.isArray(msg) ? msg.join(", ") : msg);
     } finally {
       setPublishing(false);
     }
@@ -802,11 +837,11 @@ export default function ReferenceUpload({
 
           {draft.type === "question" && (
             <div className="space-y-4">
-              {materials.length > 0 && (
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-description">
-                    Hubungkan ke Topik Bank Materi
-                  </label>
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-description">
+                  Hubungkan ke Topik Bank Materi
+                </label>
+                {materials.length > 0 ? (
                   <Dropdown
                     value={draft.materialId}
                     items={materialDropdownItems}
@@ -819,8 +854,16 @@ export default function ReferenceUpload({
                       )
                     }
                   />
-                </div>
-              )}
+                ) : (
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-text">
+                    Belum ada materi terdaftar di kelas ini. Topik baru{" "}
+                    <span className="font-semibold text-primary">
+                      "{selectedTopic?.title || draft.title}"
+                    </span>{" "}
+                    akan otomatis dibuatkan di Bank Materi saat dipublikasikan.
+                  </div>
+                )}
+              </div>
 
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-description">
@@ -990,6 +1033,15 @@ export default function ReferenceUpload({
           </div>
         </div>
       )}
+
+      {/* Success Modal */}
+      <AlertModal
+        open={publishSuccess}
+        title="Berhasil Dipublikasikan"
+        description={`${draft?.type === "material" ? "Materi" : "Soal"} "${draft?.title || ""}" sudah berhasil ditambahkan ke Bank ${draft?.type === "material" ? "Materi" : "Soal"} database.`}
+        type="success"
+        onClose={resetAll}
+      />
     </Card>
   );
 }

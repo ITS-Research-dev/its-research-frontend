@@ -4,6 +4,7 @@ import bankService from "@/services/bank.service";
 import materialService from "@/services/material.service";
 import { useClassStore } from "@/store/class.store";
 import { BankMaterial, BankQuestion, TopicDropdown } from "@/types/bank";
+import { storage } from "@/utils/storage";
 import { useCallback, useEffect, useState } from "react";
 
 export function useBank() {
@@ -12,26 +13,36 @@ export function useBank() {
   const selectedClassId = useClassStore((s) => s.selectedClassId);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    if (!selectedClassId) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
+  const load = useCallback(
+    async (silent = false) => {
+      const activeClassId = selectedClassId || storage.getClass()[0]?.value;
+      if (!activeClassId) {
+        setLoading(false);
+        return;
+      }
+      if (!silent) setLoading(true);
 
-    const materialsRes = await bankService.getMaterials(selectedClassId);
-    setMaterials(materialsRes);
-    const questionsRes = await bankService.getQuestions(selectedClassId);
-    setQuestions(questionsRes);
-
-    setLoading(false);
-  }, []);
+      try {
+        const [materialsRes, questionsRes] = await Promise.all([
+          bankService.getMaterials(activeClassId),
+          bankService.getQuestions(activeClassId),
+        ]);
+        setMaterials(materialsRes || []);
+        setQuestions(questionsRes || []);
+      } catch (e) {
+        console.error("Error loading bank data:", e);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedClassId],
+  );
 
   useEffect(() => {
     load();
   }, [load]);
 
-  return { materials, questions, loading, reload: load };
+  return { materials, questions, loading, reload: () => load(true) };
 }
 
 export function useBankMateriDetail(id: string) {

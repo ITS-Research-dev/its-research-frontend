@@ -247,7 +247,7 @@ export default function TeacherBankPage() {
      RENDER
   ===================================================== */
 
-  if (loading) {
+  if (loading && materials.length === 0 && questions.length === 0) {
     return <Loading open={loading} />;
   }
 

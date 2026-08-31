@@ -40,9 +40,9 @@ export const storage = {
 
     if (!user || !user.classId) return [];
 
-    return user.classId.map((c) => ({
-      value: c.class.id,
-      label: c.class.title,
+    return user.classId.map((c: any) => ({
+      value: c.class ? c.class.id : c.idClass || c.id,
+      label: c.class ? c.class.title : c.title || "Kelas",
     }));
   },
 
