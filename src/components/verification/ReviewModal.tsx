@@ -56,9 +56,9 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
     setScores(initialScores);
 
     /**
-     * Catatan selalu dimulai dari AI.
+     * pakai teachernote kalau ada. kalau tidak ada, default ke aiNote. kalau gaada duaduanya, default string kosong
      */
-    setNote(data.aiNote ?? "");
+    setNote(data.teacherNote || data.aiNote || "");
   }, [open, data]);
 
   /* =========================

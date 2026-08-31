@@ -80,9 +80,11 @@ export default function VerificationDetailModal({
         <section className="mt-7">
           <h3 className="mb-3 text-base font-semibold text-text">Catatan</h3>
 
-          <p className="text-sm leading-relaxed text-text">
-            {data.aiNote || "-"}
-          </p>
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-sm leading-relaxed text-text">
+              {data.teacherNote || data.aiNote || "-"}
+            </p>
+          </div>
         </section>
       </div>
     </Modal>
