@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import verificationService, { ReviewPayload } from "@/services/verification.service";
 import { VerificationDetail } from "@/types/verification";
 import { useClassStore } from "@/store/class.store";
+import { storage } from "@/utils/storage";
 
 export function useVerification() {
   const [verifications, setVerifications] = useState<VerificationDetail[]>([]);
@@ -12,14 +13,11 @@ export function useVerification() {
   const selectedClassId = useClassStore((s) => s.selectedClassId);
 
   const fetchQueue = useCallback(async () => {
-    if (!selectedClassId) {
-      setVerifications([]);
-      return [];
-    }
+    const classIdToFetch = selectedClassId || storage.getClass()[0]?.value;
 
     setError(null);
     try {
-      const data = await verificationService.getQueue(selectedClassId);
+      const data = await verificationService.getQueue(classIdToFetch);
       setVerifications(data);
       return data;
     } catch (err: any) {
@@ -30,12 +28,6 @@ export function useVerification() {
   }, [selectedClassId]);
 
   const load = useCallback(async () => {
-    if (!selectedClassId) {
-      setLoading(false);
-      setVerifications([]);
-      return;
-    }
-
     setLoading(true);
     try {
       await fetchQueue();
@@ -44,7 +36,7 @@ export function useVerification() {
     } finally {
       setLoading(false);
     }
-  }, [fetchQueue, selectedClassId]);
+  }, [fetchQueue]);
 
   useEffect(() => {
     load();
