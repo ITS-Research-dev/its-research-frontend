@@ -8,7 +8,7 @@ import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import MarkdownRenderer from "@/components/bank/MarkdownRenderer";
 
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 import { useBankMateriDetail } from "@/hooks/useBank";
 import { useParams } from "next/navigation";
 
@@ -23,38 +23,31 @@ export default function MaterialDetailPage({
 }: Props) {
   const { id } = useParams<{ id: string }>();
   const { material, loading } = useBankMateriDetail(id);
-  if (loading) return <Loading open={true} text="Memuat materi..." />;
+
+  if (loading) {
+    return (
+      <EmptyState
+        title="Detail Materi"
+        description="Memuat data materi..."
+      />
+    );
+  }
+
   if (!material) {
     return (
-      <div className="space-y-6">
-        <Link
-          href={backHref}
-          className="
-          inline-flex
-          items-center
-          gap-2
-          text-sm
-          font-medium
-          text-primary
-          transition-colors
-          hover:text-primary/80
-        "
-        >
-          <ArrowLeft size={18} />
-
-          {backLabel}
-        </Link>
-
-        <Card className="p-8 text-center">
-          <h2 className="text-lg font-semibold text-text">
-            Materi tidak ditemukan
-          </h2>
-
-          <p className="mt-2 text-description">
-            Materi yang Anda cari tidak tersedia.
-          </p>
-        </Card>
-      </div>
+      <EmptyState
+        title="Detail Materi"
+        description="Materi yang Anda cari tidak tersedia."
+        action={
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            <ArrowLeft size={16} />
+            {backLabel}
+          </Link>
+        }
+      />
     );
   }
 

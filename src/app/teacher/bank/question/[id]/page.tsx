@@ -7,10 +7,10 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 
+import EmptyState from "@/components/common/EmptyState";
 import { bankData } from "@/data/bank";
 import { useBankQuestionDetail } from "@/hooks/useBank";
 import { useParams } from "next/navigation";
-import Loading from "@/components/common/Loading";
 
 interface Props {
   backHref?: string;
@@ -24,38 +24,30 @@ export default function QuestionDetailPage({
   const { id } = useParams<{ id: string }>();
 
   const { question, loading } = useBankQuestionDetail(id);
-  if (loading) return <Loading open={true} text="Memuat materi..." />;
+  if (loading) {
+    return (
+      <EmptyState
+        title="Detail Soal"
+        description="Memuat data soal..."
+      />
+    );
+  }
+
   if (!question) {
     return (
-      <div className="space-y-6">
-        <Link
-          href={backHref}
-          className="
-          inline-flex
-          items-center
-          gap-2
-          text-sm
-          font-medium
-          text-primary
-          transition-colors
-          hover:text-primary/80
-        "
-        >
-          <ArrowLeft size={18} />
-
-          {backLabel}
-        </Link>
-
-        <Card className="p-8 text-center">
-          <h2 className="text-lg font-semibold text-text">
-            Soal tidak ditemukan
-          </h2>
-
-          <p className="mt-2 text-description">
-            Soal yang Anda cari tidak tersedia.
-          </p>
-        </Card>
-      </div>
+      <EmptyState
+        title="Detail Soal"
+        description="Soal yang Anda cari tidak tersedia."
+        action={
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            <ArrowLeft size={16} />
+            {backLabel}
+          </Link>
+        }
+      />
     );
   }
 

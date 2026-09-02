@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 
 import AssessmentSummary from "./AssessmentSummary";
 import FeedbackCard from "./FeedbackCard";
@@ -62,13 +62,6 @@ export default function AssessmentDetail({
   backHref = "/student/profile",
   backLabel = "Kembali ke Profil",
 }: Props) {
-  /**
-   * Jika initialDetail diberikan,
-   * tidak perlu memanggil API.
-   *
-   * Ini digunakan oleh Teacher Monitoring
-   * karena sementara masih menggunakan dummy data.
-   */
   const { detail: apiDetail, loading } = useAssessmentDetail(
     id,
     !initialDetail,
@@ -77,16 +70,29 @@ export default function AssessmentDetail({
   const detail = initialDetail ?? apiDetail;
 
   if (!initialDetail && loading) {
-    return <Loading open={true} text="Memuat detail asesmen..." />;
+    return (
+      <EmptyState
+        title="Detail Asesmen"
+        description="Memuat detail asesmen..."
+      />
+    );
   }
 
   if (!detail) {
     return (
-      <Card className="p-10 text-center">
-        <h2 className="text-xl font-bold text-text">Data tidak ditemukan</h2>
-
-        <p className="mt-3 text-description">Detail asesmen tidak tersedia.</p>
-      </Card>
+      <EmptyState
+        title="Detail Asesmen"
+        description="Detail asesmen tidak tersedia atau belum diproses."
+        action={
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            <ArrowLeft size={16} />
+            {backLabel}
+          </Link>
+        }
+      />
     );
   }
 

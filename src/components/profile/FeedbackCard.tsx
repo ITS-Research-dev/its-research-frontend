@@ -1,9 +1,9 @@
 import Card from "@/components/ui/Card";
 
-import { MessageSquareQuote, Sparkles } from "lucide-react";
+import { MessageSquareQuote, MessageSquareOff } from "lucide-react";
 
 interface Props {
-  feedback: string;
+  feedback?: string | null;
 }
 
 export default function FeedbackCard({ feedback }: Props) {
@@ -26,9 +26,20 @@ export default function FeedbackCard({ feedback }: Props) {
 
       {/* Body */}
       <div className="px-6 py-6">
-        <div className="flex items-start gap-3 rounded-2xl bg-background p-5">
-          <p className="leading-7 text-description">{feedback}</p>
-        </div>
+        {feedback ? (
+          <div className="flex items-start gap-3 rounded-2xl bg-background p-5">
+            <p className="leading-7 text-description">{feedback}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-surface/50 py-10">
+            <h2 className="font-semibold text-xl text-text">
+              Belum Ada Feedback
+            </h2>
+            <p className="text-md text-description">
+              Feedback akan tersedia setelah dosen menilai hasil asesmen kamu.
+            </p>
+          </div>
+        )}
       </div>
     </Card>
   );
