@@ -9,6 +9,12 @@ export const ROUTES = {
       STUDY_CASE: "/siswa/study-case",
       RUN_CODE: "/siswa/study-case/run",
       SUBMIT_CASE: "/siswa/test/ai/assess",
+      // Submission queue endpoints
+      SUBMISSION_SUBMIT: "/siswa/submission/submit",
+      SUBMISSION_EVENTS: "/siswa/submission/queue/events",
+      SUBMISSION_STATUS: (jobId: string) => `/siswa/submission/status/${jobId}`,
+      SUBMISSION_MY_QUEUE: "/siswa/submission/my-queue",
+      SUBMISSION_STATS: "/siswa/submission/stats",
     },
     TEACHER: {
       VERIFICATION: "/teacher/verifications",

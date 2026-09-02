@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CompetencyScore } from "@/types/asessment";
 import { CaseDetail as CaseDetailType, RunHistory } from "@/types/case";
-import { QueueItem } from "@/types/queue";
 
 import CaseHeader from "./CaseHeader";
 import LeftPanel from "./LeftPanel";
@@ -14,8 +13,9 @@ import RightPanel from "./RightPanel";
 import ConfirmModal from "../common/ConfirmModal";
 import AlertModal from "../common/AlertModal";
 
-import caseService, { mapScoringToCompetencies } from "@/services/case.service";
+import caseService from "@/services/case.service";
 import { mapPythonError } from "@/utils/errorMapper";
+import { useSubmissionQueue } from "@/hooks/useSubmissionQueue";
 
 interface Props {
   detail: CaseDetailType;
@@ -54,9 +54,35 @@ export default function CaseDetail({ detail }: Props) {
     description: "",
   });
 
-  // ===== Submission Queue State =====
-  const [submissionQueue, setSubmissionQueue] = useState<QueueItem[]>([]);
-  const processingRef = useRef(false);
+  // ===== Question ID → Index map (for the queue hook) =====
+  const questionIdToIndex = useMemo(() => {
+    const map: Record<string, number> = {};
+    detail.questions.forEach((q, i) => {
+      map[q.id] = i;
+    });
+    return map;
+  }, [detail.questions]);
+
+  // ===== Backend Submission Queue (replaces local queue state) =====
+  const {
+    items: submissionQueue,
+    submit: submitToQueue,
+    isQueued,
+    getPosition,
+    hasRunning: hasRunningSubmission,
+  } = useSubmissionQueue(questionIdToIndex);
+
+  // Sync completed queue items → questionResults
+  useEffect(() => {
+    for (const item of submissionQueue) {
+      if (item.status === "completed" && item.result && !questionResults[item.questionId]) {
+        setQuestionResults((prev) => ({
+          ...prev,
+          [item.questionId]: item.result!,
+        }));
+      }
+    }
+  }, [submissionQueue, questionResults]);
 
   useEffect(() => {
     const initialAnswers: Record<string, string> = {};
@@ -76,8 +102,6 @@ export default function CaseDetail({ detail }: Props) {
     setOpenedHints([]);
 
     setShowSubmitModal(false);
-
-    setSubmissionQueue([]);
 
     setAlert({
       open: false,
@@ -103,30 +127,12 @@ export default function CaseDetail({ detail }: Props) {
   }, [questionResults, submissionQueue]);
 
   // Check if current question is already submitted (either has result or is in queue)
-  const isCurrentQueued = useMemo(
-    () =>
-      submissionQueue.some(
-        (item) =>
-          item.questionId === question.id &&
-          (item.status === "queued" || item.status === "running"),
-      ),
-    [submissionQueue, question.id],
-  );
+  const isCurrentQueued = isQueued(question.id);
 
   const isCurrentSubmitted = currentResult?.submitted || isCurrentQueued;
 
-  // Check if there's a running submission (for submit button label)
-  const hasRunningSubmission = useMemo(
-    () => submissionQueue.some((item) => item.status === "running"),
-    [submissionQueue],
-  );
-
   // Get queue position for the current question (0 if not in queue)
-  const currentQueuePosition = useMemo(() => {
-    const queuedItems = submissionQueue.filter((i) => i.status === "queued");
-    const idx = queuedItems.findIndex((i) => i.questionId === question.id);
-    return idx >= 0 ? idx + 1 : 0;
-  }, [submissionQueue, question.id]);
+  const currentQueuePosition = getPosition(question.id);
 
   useEffect(() => {
     setFailedRunCount(0);
@@ -171,146 +177,31 @@ export default function CaseDetail({ detail }: Props) {
     }
   };
 
-  // ===== Queue Processor =====
-  const currentRunningIdRef = useRef<string | null>(null);
-
-  const processNextInQueue = useCallback(() => {
-    if (processingRef.current) return;
-
-    setSubmissionQueue((prev) => {
-      const hasRunning = prev.some((i) => i.status === "running");
-      if (hasRunning) return prev;
-
-      const nextQueued = prev.find((i) => i.status === "queued");
-      if (!nextQueued) return prev;
-
-      processingRef.current = true;
-      currentRunningIdRef.current = nextQueued.id;
-
-      return prev.map((item) =>
-        item.id === nextQueued.id
-          ? { ...item, status: "running" as const, startedAt: Date.now() }
-          : item,
-      );
-    });
-  }, []);
-
-  // Effect to process the running item — only fires when currentRunningIdRef changes
-  useEffect(() => {
-    const runningItem = submissionQueue.find((i) => i.status === "running");
-
-    // Only process if there's a running item and it matches our tracked ID
-    if (
-      !runningItem ||
-      !processingRef.current ||
-      runningItem.id !== currentRunningIdRef.current
-    ) {
-      return;
-    }
-
-    // Prevent re-processing: clear the ref immediately so subsequent
-    // renders of this effect won't re-trigger for the same item
-    const itemToProcess = runningItem;
-    const itemId = currentRunningIdRef.current;
-    currentRunningIdRef.current = null;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const response = await caseService.submitCase(itemToProcess.payload);
-
-        if (cancelled) return;
-
-        const competencies = mapScoringToCompetencies(response.aiScore);
-
-        const result: QuestionResult = {
-          submitted: true,
-          score: Math.round(response.overallScore),
-          level: response.level,
-          feedback: response.aiSuggestion,
-          competencies,
-        };
-
-        // Store result in questionResults
-        setQuestionResults((prev) => ({
-          ...prev,
-          [itemToProcess.questionId]: result,
-        }));
-
-        // Mark queue item as completed
-        setSubmissionQueue((prev) =>
-          prev.map((item) =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  status: "completed" as const,
-                  completedAt: Date.now(),
-                  result,
-                }
-              : item,
-          ),
-        );
-      } catch {
-        if (cancelled) return;
-
-        // Mark queue item as failed
-        setSubmissionQueue((prev) =>
-          prev.map((item) =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  status: "failed" as const,
-                  completedAt: Date.now(),
-                  error:
-                    "Terjadi kesalahan saat menilai jawaban. Pastikan server AI aktif dan coba lagi.",
-                }
-              : item,
-          ),
-        );
-      } finally {
-        if (!cancelled) {
-          processingRef.current = false;
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [submissionQueue]);
-
-  // When a submission finishes, check if there's more to process
-  useEffect(() => {
-    if (!processingRef.current) {
-      const hasQueued = submissionQueue.some((i) => i.status === "queued");
-      const hasRunning = submissionQueue.some((i) => i.status === "running");
-      if (hasQueued && !hasRunning) {
-        processNextInQueue();
-      }
-    }
-  }, [submissionQueue, processNextInQueue]);
-
-  // ===== Submit Handler (now queues instead of blocking) =====
-  const handleSubmit = () => {
+  // ===== Submit Handler (now submits to backend queue) =====
+  const handleSubmit = async () => {
     setShowSubmitModal(false);
 
-    const newItem: QueueItem = {
-      id: crypto.randomUUID(),
-      questionId: question.id,
-      questionTitle: `Soal ${question.order}`,
-      questionIndex: currentQuestion,
-      status: "queued",
-      payload: {
-        soal: question.description,
-        expectedOutput: question.expectedOutput,
-        studentCode: answers[question.id] ?? "",
-        hintUsage: openedHints.length,
-      },
-      submittedAt: Date.now(),
-    };
-
-    setSubmissionQueue((prev) => [...prev, newItem]);
+    try {
+      await submitToQueue(
+        {
+          soal: question.description,
+          expectedOutput: question.expectedOutput,
+          studentCode: answers[question.id] ?? "",
+          hintUsage: openedHints.length,
+          testId: question.id,
+          questionTitle: `Soal ${question.order}`,
+        },
+        currentQuestion,
+      );
+    } catch (e) {
+      console.error("Failed to submit to queue:", e);
+      setAlert({
+        open: true,
+        title: "Gagal Submit",
+        description:
+          "Terjadi kesalahan saat mengirim jawaban ke antrian. Silakan coba lagi.",
+      });
+    }
   };
 
   // ===== Queue Navigation =====
