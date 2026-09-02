@@ -1,6 +1,6 @@
 "use client";
 
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 import PageHeader from "@/components/common/PageHeader";
 
 import DashboardSummary from "@/components/dashboard/DashboardSummary";
@@ -11,9 +11,19 @@ export default function TeacherDashboardPage() {
   const { summary, trend, topicScores, efficiency, loading } = useDashboard();
 
   if (loading || !summary || !efficiency || !trend) {
-    return <Loading open={loading} />;
+    return (
+      <EmptyState title="Dashboard" description="Memuat data dashboard..." />
+    );
   }
 
+  if (!summary || !efficiency || !trend) {
+    return (
+      <EmptyState
+        title="Dashboard"
+        description="Tidak ada data dashboard yang tersedia."
+      />
+    );
+  }
   return (
     <div className="space-y-8">
       <PageHeader

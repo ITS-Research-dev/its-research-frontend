@@ -1,6 +1,6 @@
 "use client";
 
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 import PageHeader from "@/components/common/PageHeader";
 import VerificationStats from "@/components/verification/VerificationStats";
 import VerificationTable from "@/components/verification/VerificationTable";
@@ -18,7 +18,12 @@ export default function TeacherVerificationPage() {
   } = useVerification();
 
   if (loading) {
-    return <Loading open={loading} />;
+    return (
+      <EmptyState
+        title="Verifikasi & Final Review"
+        description="Memuat data verifikasi..."
+      />
+    );
   }
 
   return (

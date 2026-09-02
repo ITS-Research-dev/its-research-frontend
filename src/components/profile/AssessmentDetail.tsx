@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 
 import AssessmentSummary from "./AssessmentSummary";
 import FeedbackCard from "./FeedbackCard";
@@ -70,26 +70,29 @@ export default function AssessmentDetail({
   const detail = initialDetail ?? apiDetail;
 
   if (!initialDetail && loading) {
-    return <Loading open={true} text="Memuat detail asesmen..." />;
+    return (
+      <EmptyState
+        title="Detail Asesmen"
+        description="Memuat detail asesmen..."
+      />
+    );
   }
 
   if (!detail) {
     return (
-      <Card className="flex flex-col items-center justify-center gap-4 p-16 text-center">
-        <h2 className="text-xl font-semibold text-text">
-          Data Tidak Ditemukan
-        </h2>
-        <p className="text-description text-md">
-          Detail asesmen tidak tersedia atau belum diproses.
-        </p>
-        <Link
-          href={backHref}
-          className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
-        >
-          <ArrowLeft size={16} />
-          {backLabel}
-        </Link>
-      </Card>
+      <EmptyState
+        title="Detail Asesmen"
+        description="Detail asesmen tidak tersedia atau belum diproses."
+        action={
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            <ArrowLeft size={16} />
+            {backLabel}
+          </Link>
+        }
+      />
     );
   }
 

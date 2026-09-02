@@ -35,7 +35,7 @@ export function useDashboard() {
         if (cancelled) return;
 
         setSummary(summary);
-        setTopicScores(topicScores);
+        setTopicScores(topicScores ?? []);
         setEfficiency(buildAIEfficiency(summary.averageAssessmentTime));
         setTrend(trend)
       } finally {

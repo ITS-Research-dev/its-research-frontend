@@ -8,15 +8,29 @@ import CompetencyTrendChart from "@/components/profile/CompetencyTrendChart";
 import LevelTrendChart from "@/components/profile/LevelTrendChart";
 import AssessmentHistory from "@/components/profile/AssessmentHistory";
 
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 
 import { useProfileSummary } from "@/hooks/useProfile";
 
 export default function ProfilePage() {
   const { summary, loading } = useProfileSummary();
 
-  if (loading || !summary) {
-    return <Loading open={true} text="Memuat profil..." />;
+  if (loading) {
+    return (
+      <EmptyState
+        title="Profil & Riwayat Kemahiran"
+        description="Memuat profil..."
+      />
+    );
+  }
+
+  if (!summary) {
+    return (
+      <EmptyState
+        title="Profil & Riwayat Kemahiran"
+        description="Data profil tidak tersedia."
+      />
+    );
   }
 
   return (
