@@ -47,6 +47,7 @@ export default function CompetencySection({ competencies, totalCase }: Props) {
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3">
           {competencies.map((item) => {
             const Icon = iconMap[item.name as keyof typeof iconMap] ?? Brain;
+            const hasData = totalCase > 0 && item.score > 0;
 
             return (
               <CompetencyCard
@@ -54,6 +55,7 @@ export default function CompetencySection({ competencies, totalCase }: Props) {
                 title={TitleCase(item.name)}
                 value={RoundNumber(totalCase > 0 ? item.score / totalCase : 0)}
                 icon={Icon}
+                hasData={hasData}
               />
             );
           })}

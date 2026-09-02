@@ -8,15 +8,16 @@ import DashboardSummary from "@/components/dashboard/DashboardSummary";
 import { useDashboard } from "@/hooks/useDashboard";
 
 export default function TeacherDashboardPage() {
-  const { summary, trend, topicScores, efficiency, loading } = useDashboard();
+  const { summary, trend, topicScores, efficiency, loading, selectedClassId } =
+    useDashboard();
 
-  if (loading || !summary || !efficiency || !trend) {
+  if (loading) {
     return (
       <EmptyState title="Dashboard" description="Memuat data dashboard..." />
     );
   }
 
-  if (!summary || !efficiency || !trend) {
+  if (!summary || !efficiency || !trend || !selectedClassId) {
     return (
       <EmptyState
         title="Dashboard"

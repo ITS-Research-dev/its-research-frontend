@@ -30,14 +30,15 @@ export function useDashboard() {
     async function fetchDashboard() {
       setLoading(true);
       try {
-        const { summary, topicScores } = await dashboardService.getDashboard(selectedClassId);
-      const trend = await dashboardService.getTrend(selectedClassId)
+        const { summary, topicScores } =
+          await dashboardService.getDashboard(selectedClassId);
+        const trend = await dashboardService.getTrend(selectedClassId);
         if (cancelled) return;
 
         setSummary(summary);
         setTopicScores(topicScores ?? []);
         setEfficiency(buildAIEfficiency(summary.averageAssessmentTime));
-        setTrend(trend)
+        setTrend(trend);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -52,6 +53,7 @@ export function useDashboard() {
     topicScores,
     efficiency,
     loading,
+    selectedClassId,
   };
 }
 
