@@ -4,6 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+import EmptyState from "@/components/common/EmptyState";
 import PageHeader from "@/components/common/PageHeader";
 import TopicScoreDistribution from "@/components/dashboard/TopicScoreDistribution";
 import ProfileStats from "@/components/profile/ProfileStats";
@@ -30,17 +31,28 @@ export default function TeacherMonitoringStudentPage({ params }: Props) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20 text-description text-sm">
-        Memuat data siswa...
-      </div>
+      <EmptyState
+        title="Profil Siswa"
+        description="Memuat data siswa..."
+      />
     );
   }
 
   if (!student) {
     return (
-      <div className="flex items-center justify-center py-20 text-description text-sm">
-        Data siswa tidak ditemukan.
-      </div>
+      <EmptyState
+        title="Profil Siswa"
+        description="Data siswa tidak ditemukan."
+        action={
+          <Link
+            href="/teacher/monitoring"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            <ArrowLeft size={16} />
+            Kembali ke Monitoring Kelas
+          </Link>
+        }
+      />
     );
   }
 

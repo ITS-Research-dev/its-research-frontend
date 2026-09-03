@@ -43,6 +43,9 @@ const initialForm: QuestionFormData = {
 
 type FormErrors = Partial<Record<keyof QuestionFormData, string>>;
 
+const TITLE_MAX_LENGTH = 150;
+const DESCRIPTION_MAX_LENGTH = 1000;
+
 export default function QuestionFormModal({
   open,
   mode,
@@ -52,7 +55,6 @@ export default function QuestionFormModal({
   onSubmit,
 }: Props) {
   const [form, setForm] = useState<QuestionFormData>(initialForm);
-
   const [errors, setErrors] = useState<FormErrors>({});
 
   const materialItems = materials.map((material) => ({
@@ -63,7 +65,6 @@ export default function QuestionFormModal({
   useEffect(() => {
     if (!open) return;
 
-    // Reset error setiap modal dibuka
     setErrors({});
 
     if (mode === "edit" && question) {
@@ -89,16 +90,38 @@ export default function QuestionFormModal({
     field: K,
     value: QuestionFormData[K],
   ) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    if (field === "title") {
+      const v = String(value).slice(0, TITLE_MAX_LENGTH) as QuestionFormData[K];
+      setForm((prev) => ({
+        ...prev,
+        [field]: v,
+      }));
+    } else if (field === "description") {
+      const v = String(value).slice(0, DESCRIPTION_MAX_LENGTH) as QuestionFormData[K];
+      setForm((prev) => ({
+        ...prev,
+        [field]: v,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
 
-    // Hapus error ketika field mulai diperbaiki
     setErrors((prev) => ({
       ...prev,
       [field]: undefined,
     }));
+  };
+
+  const containsForbiddenChars = (text: string) => {
+    const forbidden = /[\x00-\x1F<>]/;
+    return forbidden.test(text);
+  };
+
+  const isAlphanumericWithSpaces = (text: string) => {
+    return /^[a-zA-Z0-9À-ž\s]+$/.test(text);
   };
 
   const handleSubmit = () => {
@@ -110,10 +133,18 @@ export default function QuestionFormModal({
 
     if (!form.title.trim()) {
       newErrors.title = "Judul soal wajib diisi.";
+    } else if (form.title.length > TITLE_MAX_LENGTH) {
+      newErrors.title = `Batas maksimal judul adalah ${TITLE_MAX_LENGTH} karakter.`;
+    } else if (!isAlphanumericWithSpaces(form.title)) {
+      newErrors.title = "Judul hanya boleh berisi huruf, angka, dan spasi (tidak boleh menggunakan simbol).";
     }
 
     if (!form.description.trim()) {
       newErrors.description = "Deskripsi soal wajib diisi.";
+    } else if (form.description.length > DESCRIPTION_MAX_LENGTH) {
+      newErrors.description = `Batas maksimal deskripsi adalah ${DESCRIPTION_MAX_LENGTH} karakter.`;
+    } else if (containsForbiddenChars(form.description)) {
+      newErrors.description = "Deskripsi mengandung karakter yang tidak diperbolehkan (mis. '<' atau karakter kontrol).";
     }
 
     if (!form.expectedOutput.trim()) {
@@ -134,7 +165,6 @@ export default function QuestionFormModal({
 
     setErrors(newErrors);
 
-    // Jika masih ada error, jangan submit
     if (Object.keys(newErrors).length > 0) {
       return;
     }
@@ -162,7 +192,6 @@ export default function QuestionFormModal({
     >
       <div className="space-y-5">
         {/* ================= STATUS ================= */}
-
         <div>
           <label className="mb-2 block text-sm font-medium text-text">
             Status
@@ -218,7 +247,6 @@ export default function QuestionFormModal({
         </div>
 
         {/* ================= MATERI ================= */}
-
         <Dropdown
           label="Topik Materi"
           value={form.materialId}
@@ -229,18 +257,17 @@ export default function QuestionFormModal({
         />
 
         {/* ================= JUDUL ================= */}
-
         <Input
           label="Judul Soal"
           required
-          placeholder="mis. 4. Menghitung Rata-rata"
+          placeholder="mis. Menghitung Rata Rata"
           value={form.title}
           error={errors.title}
+          maxLength={TITLE_MAX_LENGTH}
           onChange={(e) => updateField("title", e.target.value)}
         />
 
         {/* ================= DESKRIPSI ================= */}
-
         <Textarea
           label="Deskripsi Soal"
           placeholder="Buat fungsi Python untuk ..."
@@ -248,10 +275,10 @@ export default function QuestionFormModal({
           required
           error={errors.description}
           onChange={(e) => updateField("description", e.target.value)}
+          maxLength={DESCRIPTION_MAX_LENGTH}
         />
 
         {/* ================= EXPECTED OUTPUT ================= */}
-
         <Input
           label="Output yang Diharapkan"
           required
@@ -262,7 +289,6 @@ export default function QuestionFormModal({
         />
 
         {/* ================= HINT 1 ================= */}
-
         <Textarea
           label="Hint 1 — Pseudocode"
           placeholder="Tuliskan langkah-langkah penyelesaian..."
@@ -273,7 +299,6 @@ export default function QuestionFormModal({
         />
 
         {/* ================= HINT 2 ================= */}
-
         <Textarea
           label="Hint 2 — Cloze Code"
           placeholder="Berikan kode dengan beberapa bagian yang harus dilengkapi..."
@@ -284,7 +309,6 @@ export default function QuestionFormModal({
         />
 
         {/* ================= HINT 3 ================= */}
-
         <Textarea
           label="Hint 3 — Basic Code"
           placeholder="Berikan contoh kode dasar sebagai bantuan..."
@@ -293,6 +317,11 @@ export default function QuestionFormModal({
           error={errors.hint3}
           onChange={(e) => updateField("hint3", e.target.value)}
         />
+
+        <div className="flex justify-between text-xs text-description">
+          <div>Judul: {form.title.length}/{TITLE_MAX_LENGTH}</div>
+          <div>Deskripsi: {form.description.length}/{DESCRIPTION_MAX_LENGTH}</div>
+        </div>
       </div>
     </Modal>
   );

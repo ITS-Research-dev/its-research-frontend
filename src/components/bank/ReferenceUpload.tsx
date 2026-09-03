@@ -169,10 +169,15 @@ export default function ReferenceUpload({
       }
 
       setStep("topic");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiError = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+
       const msg =
-        err?.response?.data?.message ||
-        err?.message ||
+        apiError?.response?.data?.message ||
+        apiError?.message ||
         "Gagal memproses dokumen dengan Gemini AI. Pastikan file PDF valid lalu coba lagi.";
       setErrorMessage(msg);
       setStep("upload");
@@ -280,9 +285,10 @@ export default function ReferenceUpload({
 
       setDraft(questionDraft);
       setStep("preview");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiError = err as { message?: string };
       setErrorMessage(
-        err?.message || "Gagal generate konten. Silakan coba lagi.",
+        apiError?.message || "Gagal generate konten. Silakan coba lagi.",
       );
     } finally {
       setGenerating(null);
@@ -350,10 +356,15 @@ export default function ReferenceUpload({
 
       onPublished?.();
       setPublishSuccess(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiError = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+
       const msg =
-        err?.response?.data?.message ||
-        err?.message ||
+        apiError?.response?.data?.message ||
+        apiError?.message ||
         "Gagal mempublikasikan hasil. Silakan coba lagi.";
       setErrorMessage(msg);
     } finally {
@@ -366,6 +377,10 @@ export default function ReferenceUpload({
     setPublishSuccess(false);
     setErrorMessage(null);
     setStep("topic");
+  };
+
+  const handleCancelUpload = () => {
+    resetAll();
   };
 
   /* =====================================================
@@ -478,7 +493,10 @@ export default function ReferenceUpload({
           )}
 
           {file && (
-            <div className="flex justify-end w-full h-fit items-center mt-10">
+            <div className="mt-8 flex w-full flex-wrap items-center justify-end gap-3 border-t border-border pt-4">
+              <Button variant="outline" onClick={handleCancelUpload}>
+                Batalkan
+              </Button>
               <Button
                 className="bg-primary text-white hover:bg-primary/90"
                 onClick={handleProcessDocument}
@@ -955,9 +973,9 @@ export default function ReferenceUpload({
           </h3>
 
           <p className="max-w-sm text-sm text-description">
-            {draft.type === "material" ? "Materi" : "Soal"} "{draft.title}"
-            sudah ditambahkan ke Bank{" "}
-            {draft.type === "material" ? "Materi" : "Soal"} database.
+            {draft.type === "material" ? "Materi" : "Soal"} {draft.title} sudah
+            ditambahkan ke Bank {draft.type === "material" ? "Materi" : "Soal"}{" "}
+            database.
           </p>
 
           <div className="mt-2 flex flex-wrap justify-center gap-3">

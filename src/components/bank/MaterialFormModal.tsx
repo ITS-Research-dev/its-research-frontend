@@ -50,6 +50,9 @@ const initialForm: MaterialFormData = {
 
 type EditorMode = "write" | "preview";
 
+const TITLE_MAX_LENGTH = 150;
+const DESCRIPTION_MAX_LENGTH = 1000;
+
 export default function MaterialFormModal({
   open,
   mode,
@@ -91,10 +94,24 @@ export default function MaterialFormModal({
     field: K,
     value: MaterialFormData[K],
   ) => {
-    setForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    if (field === "title") {
+      const v = String(value).slice(0, TITLE_MAX_LENGTH) as MaterialFormData[K];
+      setForm((prev) => ({
+        ...prev,
+        [field]: v,
+      }));
+    } else if (field === "description") {
+      const v = String(value).slice(0, DESCRIPTION_MAX_LENGTH) as MaterialFormData[K];
+      setForm((prev) => ({
+        ...prev,
+        [field]: v,
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
 
     setErrors((prev) => ({
       ...prev,
@@ -102,33 +119,45 @@ export default function MaterialFormModal({
     }));
   };
 
-  const handleSubmit = () => {
-    const newErrors: Partial<Record<keyof MaterialFormData, string>> = {};
-
-    if (!form.startDate) {
-      newErrors.startDate = "Tanggal mulai wajib diisi.";
-    }
-
-    if (!form.title.trim()) {
-      newErrors.title = "Judul materi wajib diisi.";
-    }
-
-    if (!form.description.trim()) {
-      newErrors.description = "Deskripsi materi wajib diisi.";
-    }
-
-    if (!form.content.trim()) {
-      newErrors.content = "Konten materi wajib diisi.";
-    }
-
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
-      return;
-    }
-
-    onSubmit(form);
+  const containsSymbols = (text: string) => {
+  return /[^a-zA-Z0-9\s\u00C0-\u024F-]/.test(text);
   };
+
+  const handleSubmit = () => {
+  const newErrors: Partial<Record<keyof MaterialFormData, string>> = {};
+
+  if (!form.startDate) {
+    newErrors.startDate = "Tanggal mulai wajib diisi.";
+  }
+
+  if (!form.title.trim()) {
+    newErrors.title = "Judul materi wajib diisi.";
+  } else if (form.title.length > TITLE_MAX_LENGTH) {
+    newErrors.title = `Batas maksimal judul adalah ${TITLE_MAX_LENGTH} karakter.`;
+  } else if (containsSymbols(form.title)) {
+    newErrors.title = "Judul hanya boleh berisi huruf, angka, spasi, dan tanda hubung (-).";
+  }
+
+  if (!form.description.trim()) {
+    newErrors.description = "Deskripsi materi wajib diisi.";
+  } else if (form.description.length > DESCRIPTION_MAX_LENGTH) {
+    newErrors.description = `Batas maksimal deskripsi adalah ${DESCRIPTION_MAX_LENGTH} karakter.`;
+  } else if (containsSymbols(form.description)) {
+    newErrors.description = "Deskripsi hanya boleh berisi huruf, angka, spasi, dan tanda hubung (-).";
+  }
+
+  if (!form.content.trim()) {
+    newErrors.content = "Konten materi wajib diisi.";
+  }
+
+  setErrors(newErrors);
+
+  if (Object.keys(newErrors).length > 0) {
+    return;
+  }
+
+  onSubmit(form);
+};
 
   return (
     <Modal
@@ -228,6 +257,7 @@ export default function MaterialFormModal({
           placeholder="mis. Perulangan (Loop)"
           value={form.title}
           error={errors.title}
+          maxLength={TITLE_MAX_LENGTH}
           onChange={(e) => updateField("title", e.target.value)}
         />
 
@@ -240,6 +270,7 @@ export default function MaterialFormModal({
           required
           error={errors.description}
           onChange={(e) => updateField("description", e.target.value)}
+          maxLength={DESCRIPTION_MAX_LENGTH}
         />
 
         {/* ================= MARKDOWN ================= */}
@@ -251,6 +282,12 @@ export default function MaterialFormModal({
           error={errors.description}
           onModeChange={setEditorMode}
         />
+
+        {/* character helper */}
+        <div className="flex justify-between text-xs text-description">
+          <div>Judul: {form.title.length}/{TITLE_MAX_LENGTH}</div>
+          <div>Deskripsi: {form.description.length}/{DESCRIPTION_MAX_LENGTH}</div>
+        </div>
       </div>
     </Modal>
   );
@@ -460,7 +497,7 @@ function MarkdownEditor({
 
               <ToolbarButton
                 title="Inline Code"
-                onClick={() => insertMarkdown("`", "`", "kode")}
+                onClick={() => insertMarkdown("```", "```", "kode")}
               >
                 <Code size={16} />
               </ToolbarButton>
@@ -569,7 +606,7 @@ Gunakan **for** untuk melakukan perulangan.
 - for
 - while
 
-\`print("Hello")\``}
+` + "`print(\"Hello\")`"}
             className="
               min-h-90
               w-full
@@ -619,7 +656,7 @@ Gunakan **for** untuk melakukan perulangan.
 
 /* =========================================================
    TOOLBAR BUTTON
-========================================================= */
+======================================================== */
 
 interface ToolbarButtonProps {
   children: React.ReactNode;
@@ -653,7 +690,7 @@ function ToolbarButton({ children, title, onClick }: ToolbarButtonProps) {
 
 /* =========================================================
    TOOLBAR DIVIDER
-========================================================= */
+======================================================== */
 
 function ToolbarDivider() {
   return <span className="mx-1 h-5 w-px bg-border" />;
@@ -661,7 +698,7 @@ function ToolbarDivider() {
 
 /* =========================================================
    MARKDOWN PREVIEW
-========================================================= */
+======================================================== */
 
 interface MarkdownPreviewProps {
   content: string;

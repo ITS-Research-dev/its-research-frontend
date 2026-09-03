@@ -42,7 +42,7 @@ export interface AssessmentHistoryItem {
 export interface AssessmentDetail extends AssessmentHistoryItem {
   hintsUsed: number;
   duration?: string;
-  feedback: string;
+  feedback?: string | null;
 
   competencies: CompetencyScore[];
   questions?: AssessmentQuestion[];

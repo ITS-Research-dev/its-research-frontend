@@ -14,7 +14,11 @@ import {
   YAxis,
   Tooltip,
 } from "recharts";
-import { CompetencyTrend, ProfileResponse, RawGraphProfile } from "@/types/profile";
+import {
+  CompetencyTrend,
+  ProfileResponse,
+  RawGraphProfile,
+} from "@/types/profile";
 import { RoundNumber } from "@/utils/global";
 import { DropdownItem } from "../common/DataTable";
 import TableLoading from "../common/TableLoading";
@@ -29,8 +33,7 @@ interface TrendInfo {
   title: string;
   description: string;
   colorClass: string;
-};
-
+}
 
 function isWeekKey(key: string): boolean {
   return key.includes("-"); // "01-07" -> week
@@ -43,7 +46,7 @@ function isMonthKey(key: string): boolean {
 function formatEntries(
   entries: { [key: string]: { [key: string]: RawGraphProfile } },
   period: "week" | "month",
-  topic: string
+  topic: string,
 ): CompetencyTrend[] {
   const matcher = period === "week" ? isWeekKey : isMonthKey;
   return Object.entries(entries)
@@ -52,22 +55,22 @@ function formatEntries(
       const value = topic === "all" ? bucket.total : bucket[topic];
       return {
         name: key,
-        score : value ? RoundNumber(value.avg / value.count) : 0,
+        score: value ? RoundNumber(value.avg / value.count) : 0,
       };
     });
 }
 
-function formatRawTopics(topics: string[]) : DropdownItem[] {
-    return [
-      {
-        label: "Semua Topik",
-        value: "all",
-      },
-      ...topics.map((topicName) => ({
-        label: topicName,
-        value: topicName,
-      })),
-    ];
+function formatRawTopics(topics: string[]): DropdownItem[] {
+  return [
+    {
+      label: "Semua Topik",
+      value: "all",
+    },
+    ...topics.map((topicName) => ({
+      label: topicName,
+      value: topicName,
+    })),
+  ];
 }
 
 function getTrendInfo(data: { score: number }[]): TrendInfo | null {
@@ -82,7 +85,8 @@ function getTrendInfo(data: { score: number }[]): TrendInfo | null {
     return {
       emoji: "📈",
       title: `Kompetensimu meningkat ${absDiff} poin dibanding periode awal.`,
-      description: "Pertahankan konsistensi belajar untuk mencapai nilai maksimal.",
+      description:
+        "Pertahankan konsistensi belajar untuk mencapai nilai maksimal.",
       colorClass: "text-primary",
     };
   }
@@ -91,7 +95,8 @@ function getTrendInfo(data: { score: number }[]): TrendInfo | null {
     return {
       emoji: "📉",
       title: `Kompetensimu menurun ${absDiff} poin dibanding periode awal.`,
-      description: "Yuk, evaluasi kembali proses belajarmu agar kembali meningkat.",
+      description:
+        "Yuk, evaluasi kembali proses belajarmu agar kembali meningkat.",
       colorClass: "text-destructive",
     };
   }
@@ -99,7 +104,8 @@ function getTrendInfo(data: { score: number }[]): TrendInfo | null {
   return {
     emoji: "➖",
     title: "Kompetensimu stabil dibanding periode awal.",
-    description: "Coba tingkatkan intensitas latihan untuk mendorong kemajuan lebih lanjut.",
+    description:
+      "Coba tingkatkan intensitas latihan untuk mendorong kemajuan lebih lanjut.",
     colorClass: "text-muted-foreground",
   };
 }
@@ -109,85 +115,96 @@ export default function CompetencyTrendChart({ entries, topics }: Props) {
   const [topic, setTopic] = useState("all");
 
   const data = useMemo(() => {
-    if(Array.isArray(entries)) return []
+    if (Array.isArray(entries)) return [];
     return formatEntries(entries, period, topic);
   }, [period, topic, entries]);
 
-  const trend = getTrendInfo(data)
+  const trend = getTrendInfo(data);
 
-return (
-  <Card className="p-7">
-    <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-      <div>
-        <h2 className="text-xl font-bold text-text">
-          Trend Rata-rata Kompetensi
-        </h2>
+  return (
+    <Card className="p-7">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-text">
+            Trend Rata-rata Kompetensi
+          </h2>
 
-        <p className="mt-1 text-description">
-          Perkembangan rata-rata kompetensi berdasarkan hasil asesmen.
-        </p>
-      </div>
+          <p className="mt-1 text-description">
+            Perkembangan rata-rata kompetensi berdasarkan hasil asesmen.
+          </p>
+        </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Dropdown
-          value={topic}
-          onChange={setTopic}
-          items={formatRawTopics(topics)}
-          placeholder="Topik"
-        />
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Dropdown
+            value={topic}
+            onChange={setTopic}
+            items={formatRawTopics(topics)}
+            placeholder="Topik"
+          />
 
-        <div className="flex rounded-xl border border-border bg-surface p-1">
-          <button
-            onClick={() => setPeriod("week")}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              period === "week" ? "bg-primary text-white" : "text-description"
-            }`}
-          >
-            Minggu
-          </button>
+          <div className="flex rounded-xl border border-border bg-surface p-1">
+            <button
+              onClick={() => setPeriod("week")}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                period === "week" ? "bg-primary text-white" : "text-description"
+              }`}
+            >
+              Minggu
+            </button>
 
-          <button
-            onClick={() => setPeriod("month")}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              period === "month"
-                ? "bg-primary text-white"
-                : "text-description"
-            }`}
-          >
-            Bulan
-          </button>
+            <button
+              onClick={() => setPeriod("month")}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                period === "month"
+                  ? "bg-primary text-white"
+                  : "text-description"
+              }`}
+            >
+              Bulan
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div className="mt-8 h-90">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="4 4" />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
-          <Tooltip />
-          <Line
-            type="monotone"
-            dataKey="score"
-            stroke="#3fbcc3"
-            strokeWidth={3}
-            dot={{ r: 6 }}
-            activeDot={{ r: 8 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-
-    {trend && (
-      <div className="mt-6 rounded-2xl bg-primary/5 p-5">
-        <p className={`font-semibold ${trend.colorClass}`}>
-          {trend.emoji} {trend.title}
-        </p>
-        <p className="mt-1 text-description">{trend.description}</p>
+      <div className="mt-8 h-90">
+        {data.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-surface/50">
+            <h2 className="font-semibold text-xl text-text">
+              Belum Ada Data Trend Kompetensi
+            </h2>
+            <p className="text-md text-description">
+              Selesaikan studi kasus terlebih dahulu untuk melihat perkembangan
+              kompetensimu.
+            </p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="4 4" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="score"
+                stroke="#3fbcc3"
+                strokeWidth={3}
+                dot={{ r: 6 }}
+                activeDot={{ r: 8 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
-    )}
-  </Card>
-);
 
+      {trend && (
+        <div className="mt-6 rounded-2xl bg-primary/5 p-5">
+          <p className={`font-semibold ${trend.colorClass}`}>
+            {trend.emoji} {trend.title}
+          </p>
+          <p className="mt-1 text-description">{trend.description}</p>
+        </div>
+      )}
+    </Card>
+  );
 }

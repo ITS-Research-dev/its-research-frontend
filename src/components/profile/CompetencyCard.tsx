@@ -3,16 +3,33 @@ import { LucideIcon } from "lucide-react";
 
 interface CompetencyCardProps {
   title: string;
-  value: number;
+  value?: number | null;
   icon?: LucideIcon;
+  hasData?: boolean;
 }
 
 export default function CompetencyCard({
   title,
   value,
   icon: Icon,
+  hasData,
 }: CompetencyCardProps) {
+  const isNoData =
+    hasData === false ||
+    value === undefined ||
+    value === null ||
+    value === 0 ||
+    Number.isNaN(value);
+
   const getVariant = () => {
+    if (isNoData || value === undefined || value === null) {
+      return {
+        text: "Belum Ada Data",
+        color: "text-description",
+        bg: "bg-description/10",
+      };
+    }
+
     if (value >= 85)
       return {
         text: "Sangat Baik",
@@ -74,7 +91,9 @@ export default function CompetencyCard({
         </div>
       )}
 
-      <div className={`text-3xl font-bold ${variant.color}`}>{value}</div>
+      <div className={`text-3xl font-bold ${variant.color}`}>
+        {isNoData ? "-" : value}
+      </div>
 
       <div className={`mt-1 text-sm font-medium ${variant.color}`}>
         {variant.text}

@@ -1,6 +1,6 @@
 "use client";
 
-import { notFound, useParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { materials } from "@/data/materials";
 import Link from "next/link";
@@ -11,7 +11,7 @@ import MaterialFooter from "@/components/material/MaterialFooter";
 import SummaryCard from "@/components/material/SummaryCard";
 import CodeBlock from "@/components/material/CodeBlock";
 import { useMaterialDetail } from "@/hooks/useMaterial";
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 import MarkdownContent from "@/components/material/MarkdownContent";
 
 export default function MaterialDetailPage() {
@@ -19,8 +19,32 @@ export default function MaterialDetailPage() {
   const { material, loading } = useMaterialDetail(id);
   const router = useRouter();
 
-  if (loading) return <Loading open={true} text="Memuat materi..." />;
-  if (!material) notFound();
+  if (loading) {
+    return (
+      <EmptyState
+        title="Detail Materi"
+        description="Memuat materi..."
+      />
+    );
+  }
+
+  if (!material) {
+    return (
+      <EmptyState
+        title="Detail Materi"
+        description="Materi tidak ditemukan."
+        action={
+          <Link
+            href="/student/materials"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            <ArrowLeft size={16} />
+            Kembali ke Materi
+          </Link>
+        }
+      />
+    );
+  }
 
   return (
     <div className="space-y-8">

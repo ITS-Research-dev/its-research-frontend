@@ -1,6 +1,6 @@
 "use client";
 
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 import ItemList from "@/components/common/ItemList";
 import PageHeader from "@/components/common/PageHeader";
 
@@ -10,7 +10,12 @@ export default function CasePage() {
   const { cases, loading } = useCases();
 
   if (loading) {
-    return <Loading open={true} text="Memuat studi kasus..." />;
+    return (
+      <EmptyState
+        title="Studi Kasus"
+        description="Memuat daftar studi kasus..."
+      />
+    );
   }
 
   return (
@@ -20,7 +25,14 @@ export default function CasePage() {
         description="Kerjakan studi kasus secara berurutan untuk mengukur kemampuanmu dalam menerapkan materi yang telah dipelajari."
       />
 
-      <ItemList items={cases} />
+      {cases.length === 0 ? (
+        <EmptyState
+          title="Studi Kasus"
+          description="Belum ada studi kasus yang tersedia."
+        />
+      ) : (
+        <ItemList items={cases} />
+      )}
     </div>
   );
 }
