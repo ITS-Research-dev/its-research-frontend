@@ -25,6 +25,14 @@ export interface VerificationItem {
 
   teacherNote?: string;
 
+  className?: string;
+
+  studentId?: string;
+
+  questionId?: string;
+
+  createdAt?: string;
+
   dimensions: VerificationDimension[];
 }
 

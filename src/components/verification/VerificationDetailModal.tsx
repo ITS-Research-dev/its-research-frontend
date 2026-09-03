@@ -24,7 +24,7 @@ export default function VerificationDetailModal({
         {/* Header Informasi */}
         <div>
           <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            XI RPL 2
+            {data.className || "Kelas"}
           </p>
 
           <h2 className="mt-2 text-2xl font-bold text-text">
@@ -80,9 +80,11 @@ export default function VerificationDetailModal({
         <section className="mt-7">
           <h3 className="mb-3 text-base font-semibold text-text">Catatan</h3>
 
-          <p className="text-sm leading-relaxed text-text">
-            {data.aiNote || "-"}
-          </p>
+          <div className="rounded-xl border border-border bg-background p-4">
+            <p className="text-sm leading-relaxed text-text">
+              {data.teacherNote || data.aiNote || "-"}
+            </p>
+          </div>
         </section>
       </div>
     </Modal>

@@ -140,13 +140,14 @@ export default function CaseDetail({ detail }: Props) {
     }));
   };
 
-  const handleRun = async () => {
+  const handleRun = async (stdin?: string) => {
     setRunning(true);
 
     try {
       const result = await caseService.runCode({
         questionId: question.id,
         code: answers[question.id] ?? "",
+        stdin,
       });
 
       if (result.stderr) {

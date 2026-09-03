@@ -247,13 +247,8 @@ export default function TeacherBankPage() {
      RENDER
   ===================================================== */
 
-  if (loading) {
-    return (
-      <EmptyState
-        title="Bank Materi & Soal"
-        description="Memuat data bank materi dan soal..."
-      />
-    );
+  if (loading && materials.length === 0 && questions.length === 0) {
+    return <Loading open={loading} />;
   }
 
   return (

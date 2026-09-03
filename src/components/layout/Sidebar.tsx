@@ -52,8 +52,15 @@ export default function Sidebar({ role }: SidebarProps) {
   };
 
    useEffect(() => {
-    setClasses(storage.getClass());
-  }, []);
+    const list = storage.getClass();
+    setClasses(list);
+    if (list.length > 0) {
+      const exists = list.some((item) => item.value === selectedClassId);
+      if (!selectedClassId || !exists) {
+        setSelectedClassId(list[0].value);
+      }
+    }
+  }, [selectedClassId, setSelectedClassId]);
 
   return (
     <>

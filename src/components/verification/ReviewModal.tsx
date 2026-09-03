@@ -22,7 +22,7 @@ interface Props {
     scores: Record<string, number>,
     note: string,
     decision: "terima" | "koreksi",
-  ) => void;
+  ) => void | Promise<void>;
 }
 
 type ConfirmAction = "save" | "accept-ai" | null;
@@ -56,9 +56,9 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
     setScores(initialScores);
 
     /**
-     * Catatan selalu dimulai dari AI.
+     * pakai teachernote kalau ada. kalau tidak ada, default ke aiNote. kalau gaada duaduanya, default string kosong
      */
-    setNote(data.aiNote ?? "");
+    setNote(data.teacherNote || data.aiNote || "");
   }, [open, data]);
 
   /* =========================
@@ -90,41 +90,31 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
      CONFIRM ACTION
   ========================= */
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!data || !confirmAction) return;
 
     setConfirmLoading(true);
 
-    /**
-     * Guru melakukan perubahan skor.
-     */
-    if (confirmAction === "save") {
-      onSave?.(data.id, scores, note, "koreksi");
+    try {
+      if (confirmAction === "save") {
+        await onSave?.(data.id, scores, note, "koreksi");
+      }
+
+      if (confirmAction === "accept-ai") {
+        const aiScores: Record<string, number> = {};
+
+        data.dimensions.forEach((dimension) => {
+          aiScores[dimension.name] = dimension.aiScore;
+        });
+
+        setScores(aiScores);
+
+        await onSave?.(data.id, aiScores, note, "terima");
+      }
+    } finally {
+      setConfirmLoading(false);
+      setConfirmAction(null);
     }
-
-    /**
-     * Guru menerima seluruh skor AI.
-     */
-    if (confirmAction === "accept-ai") {
-      const aiScores: Record<string, number> = {};
-
-      data.dimensions.forEach((dimension) => {
-        aiScores[dimension.name] = dimension.aiScore;
-      });
-
-      setScores(aiScores);
-
-      /**
-       * Catatan tetap menggunakan isi textarea.
-       * Artinya, catatan AI dapat tetap diedit
-       * sebelum skor AI diterima.
-       */
-      onSave?.(data.id, aiScores, note, "terima");
-    }
-
-    setConfirmLoading(false);
-
-    setConfirmAction(null);
   };
 
   /* =========================
@@ -173,7 +163,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
             <div className="shrink-0 border-b border-border pb-5">
               <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                Tinjau Asesmen
+                {data.className ? `${data.className} · Tinjau Asesmen` : "Tinjau Asesmen"}
               </p>
 
               <h2 className="mt-2 text-xl font-bold text-text">
@@ -233,7 +223,7 @@ export default function ReviewModal({ open, data, onClose, onSave }: Props) {
 
                   <pre className="overflow-x-auto bg-[#1e1e1e] p-5 text-sm leading-relaxed text-gray-100">
                     <code>
-                      {data.code ?? data.userAnswer ?? "Jawaban siswa tidak tersedia."}
+                      {data.userAnswer || data.code || "Jawaban siswa tidak tersedia."}
                     </code>
                   </pre>
                 </div>
