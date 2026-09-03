@@ -15,6 +15,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useClassStore } from "@/store/class.store";
 import { DropdownItem } from "../common/DataTable";
 import { storage } from "@/utils/storage";
+import api from "@/lib/api";
+
 
 interface SidebarProps {
   role: "teacher" | "student";
@@ -51,16 +53,48 @@ export default function Sidebar({ role }: SidebarProps) {
     }
   };
 
-   useEffect(() => {
-    const list = storage.getClass();
-    setClasses(list);
-    if (list.length > 0) {
-      const exists = list.some((item) => item.value === selectedClassId);
-      if (!selectedClassId || !exists) {
-        setSelectedClassId(list[0].value);
-      }
+  useEffect(() => {
+    let isMounted = true;
+    const initialList = storage.getClass();
+    if (initialList.length > 0) {
+      setClasses(initialList);
     }
-  }, [selectedClassId, setSelectedClassId]);
+
+    if (role === "teacher") {
+      api
+        .get("/class")
+        .then((res) => {
+          if (!isMounted || !Array.isArray(res.data)) return;
+          const all = res.data.map((c: any) => ({
+            value: c.id,
+            label: c.title,
+          }));
+          if (all.length > 0) {
+            setClasses(all);
+            const exists = all.some(
+              (item: any) => item.value === selectedClassId,
+            );
+            if (!selectedClassId || !exists) {
+              setSelectedClassId(all[0].value);
+            }
+          }
+        })
+        .catch(() => {
+          if (initialList.length > 0) {
+            const exists = initialList.some(
+              (item) => item.value === selectedClassId,
+            );
+            if (!selectedClassId || !exists) {
+              setSelectedClassId(initialList[0].value);
+            }
+          }
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [role]);
+
 
   return (
     <>

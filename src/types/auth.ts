@@ -12,10 +12,12 @@ export interface Class {
   state: string;
 }
 export interface User {
+  id?: string;
   name: string;
   role: string;
   classId: Class[];
 }
+
 
 export interface LoginResponse {
   message: string;

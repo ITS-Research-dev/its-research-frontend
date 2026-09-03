@@ -51,19 +51,6 @@ export default function RightPanel({
 }: Props) {
   return (
     <div className="space-y-6">
-      {/* Per-question assessment status */}
-      {assessing && !result?.submitted && (
-        <Card className="flex flex-col items-center justify-center gap-4 p-8 text-center">
-          <Loader2 size={40} className="animate-spin text-primary" />
-          <div>
-            <h3 className="font-semibold text-text">AI Sedang Menilai</h3>
-            <p className="mt-1 text-sm text-description">
-              Soal ini sedang dalam antrian penilaian. Kamu bisa mengerjakan soal lain sambil menunggu.
-            </p>
-          </div>
-        </Card>
-      )}
-
       {/* Evaluation result or Hints */}
       {result?.submitted ? (
         <EvaluationCard
@@ -73,15 +60,14 @@ export default function RightPanel({
           competencies={result.competencies}
         />
       ) : (
-        !assessing && (
-          <HintSection
-            hints={hints}
-            failedRunCount={failedRunCount}
-            openedHints={openedHints}
-            onUseHint={onUseHint}
-          />
-        )
+        <HintSection
+          hints={hints}
+          failedRunCount={failedRunCount}
+          openedHints={openedHints}
+          onUseHint={onUseHint}
+        />
       )}
+
 
       {/* Submission Queue Panel */}
       <SubmissionQueue items={queueItems} onItemClick={onQueueItemClick} />
