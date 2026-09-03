@@ -50,10 +50,13 @@ export function useBankMateriDetail(id: string) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    const response = await bankService.getMaterial(id);
-    setMaterial(response);
-    setLoading(false);
+    try{
+      setLoading(true);
+      const response = await bankService.getMaterial(id);
+      setMaterial(response);
+    }finally{
+      setLoading(false);
+    }
   }, [id]);
 
   useEffect(() => {
@@ -68,10 +71,13 @@ export function useBankQuestionDetail(id: string) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    const response = await bankService.getQuestion(id);
-    setQuestion(response);
-    setLoading(false);
+    try{
+      setLoading(true);
+      const response = await bankService.getQuestion(id);
+      setQuestion(response);
+    }finally{
+      setLoading(false);
+    }
   }, [id]);
 
   useEffect(() => {

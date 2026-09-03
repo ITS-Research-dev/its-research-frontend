@@ -151,12 +151,11 @@ export default function TeacherBankPage() {
 
       if (materialMode == "edit" && selectedMaterial?.id) {
         await bankService.editMaterial(selectedMaterial.id, data);
-        setSuccessTitle("Materi Berhasil Ditambahkan");
+        setSuccessTitle("Materi Berhasil Diperbarui");
+        setSuccessDescription("Perubahan materi berhasil disimpan.");
       } else {
         await bankService.createMaterial(selectedClassId, data);
-        setSuccessTitle("Materi berhasil Diperbarui");
-
-        setSuccessDescription("Perubahan materi berhasil disimpan.");
+        setSuccessTitle("Materi berhasil Ditambahkan");
       }
 
       setPendingMaterial(null);
@@ -184,14 +183,13 @@ export default function TeacherBankPage() {
 
     if (confirmType === "question" && pendingQuestion) {
       const data = pendingQuestion;
-      if (materialMode == "edit" && selectedQuestion?.id) {
+      if (questionMode == "edit" && selectedQuestion?.id) {
         await bankService.editQuestion(selectedQuestion.id, data);
-        setSuccessTitle("Soal Berhasil Ditambahkan");
+        setSuccessTitle("Soal Berhasil Diperbarui");
+        setSuccessDescription("Perubahan soal berhasil disimpan.");
       } else {
         await bankService.createQuestion(data);
-        setSuccessTitle("Soal Berhasil Diperbarui");
-
-        setSuccessDescription("Perubahan soal berhasil disimpan.");
+        setSuccessTitle("Soal Berhasil Ditambahkan");
       }
 
       setPendingQuestion(null);
@@ -267,8 +265,8 @@ export default function TeacherBankPage() {
       ================================================= */}
 
       <BankStats
-        totalMaterials={materials.length}
-        totalQuestions={questions.length}
+        totalMaterials={materials.filter((m) => m.status === "active").length}
+        totalQuestions={questions.filter((m) => m.status === "active").length}
       />
 
       {/* =================================================
@@ -362,21 +360,25 @@ export default function TeacherBankPage() {
       ================================================= */}
 
       <div className={activeTab === "material" ? "block" : "hidden"}>
-        <Card className="p-7">
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-text">Daftar Materi</h2>
+        {loading ? (
+          <Loading open={loading} />
+        ) : (
+          <Card className="p-7">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-text">Daftar Materi</h2>
 
-              <p className="mt-1 text-sm text-description">
-                Kelola materi pembelajaran yang tersedia.
-              </p>
+                <p className="mt-1 text-sm text-description">
+                  Kelola materi pembelajaran yang tersedia.
+                </p>
+              </div>
+
+              <Button onClick={handleAddMaterial}>+ Tambah Manual</Button>
             </div>
 
-            <Button onClick={handleAddMaterial}>+ Tambah Manual</Button>
-          </div>
-
-          <MaterialTable data={materials} onEdit={handleEditMaterial} />
-        </Card>
+            <MaterialTable data={materials} onEdit={handleEditMaterial} />
+          </Card>
+        )}
       </div>
 
       {/* =================================================

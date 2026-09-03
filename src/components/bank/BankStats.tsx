@@ -5,7 +5,7 @@ import StatCard from "@/components/profile/StatCard";
 
 interface Props {
   totalMaterials: number;
-  totalQuestions: number;
+  totalQuestions: number ;
 }
 
 export default function BankStats({ totalMaterials, totalQuestions }: Props) {

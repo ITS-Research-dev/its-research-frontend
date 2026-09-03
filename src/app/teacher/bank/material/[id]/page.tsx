@@ -50,7 +50,6 @@ export default function MaterialDetailPage({
       />
     );
   }
-
   return (
     <div className="space-y-6">
       {/* ================= HEADER ================= */}
