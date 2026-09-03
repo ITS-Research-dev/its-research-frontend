@@ -7,6 +7,8 @@ import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import AlertModal from "@/components/common/AlertModal";
+import Loading from "@/components/common/Loading";
+
 
 import BankStats from "@/components/bank/BankStats";
 import MaterialTable from "@/components/bank/MaterialTable";

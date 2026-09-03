@@ -22,6 +22,18 @@ export interface CaseCardData {
   href: string;
 }
 
+export interface CaseQuestionSubmission {
+  id: string;
+  score: number;
+  level: string;
+  feedback: string;
+  aiScore?: any;
+  teacherScore?: any;
+  code: string;
+  hintUsage?: number;
+  createdAt?: string;
+}
+
 export interface CaseQuestion {
   id: string;
   order: number;
@@ -30,7 +42,10 @@ export interface CaseQuestion {
   expectedOutput: string;
   starterCode: string;
   hints: string[];
+  hasSubmitted?: boolean;
+  submission?: CaseQuestionSubmission | null;
 }
+
 
 /* ===========================
  * Detail Case

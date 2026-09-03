@@ -9,11 +9,13 @@ import { CaseDetail, CaseItem, RunCodePayload, RunCodeResponse } from "@/types/c
  * ================================ */
 
 export interface SubmitCasePayload {
+  testId?: string;
   soal: string;
   expectedOutput: string;
   studentCode: string;
   hintUsage: number;
 }
+
 
 export interface SubmitCaseResponse {
   aiScore: Scoring;

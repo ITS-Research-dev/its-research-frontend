@@ -16,6 +16,9 @@ import AlertModal from "../common/AlertModal";
 
 import caseService, { mapScoringToCompetencies } from "@/services/case.service";
 import { mapPythonError } from "@/utils/errorMapper";
+import { storage } from "@/utils/storage";
+
+
 
 interface Props {
   detail: CaseDetailType;
@@ -59,32 +62,84 @@ export default function CaseDetail({ detail }: Props) {
   const processingRef = useRef(false);
 
   useEffect(() => {
-    const initialAnswers: Record<string, string> = {};
+    const user = storage.getUser();
+    const draftKey = `case_draft_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
+    let savedDrafts: {
+      answers?: Record<string, string>;
+      currentQuestion?: number;
+    } = {};
 
-    detail.questions.forEach((question) => {
-      initialAnswers[question.id] = question.starterCode;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) savedDrafts = JSON.parse(raw);
+    } catch {
+      // ignore
+    }
+
+    const initialAnswers: Record<string, string> = {};
+    const initialResults: Record<string, QuestionResult> = {};
+
+    detail.questions.forEach((q) => {
+      if (q.hasSubmitted && q.submission) {
+        initialAnswers[q.id] = q.submission.code || q.starterCode;
+        initialResults[q.id] = {
+          submitted: true,
+          score: q.submission.score,
+          level: q.submission.level,
+          feedback: q.submission.feedback,
+          competencies: q.submission.aiScore
+            ? mapScoringToCompetencies(q.submission.aiScore)
+            : [],
+        };
+      } else if (savedDrafts.answers?.[q.id] !== undefined) {
+        initialAnswers[q.id] = savedDrafts.answers[q.id];
+      } else {
+        initialAnswers[q.id] = q.starterCode;
+      }
     });
 
     setAnswers(initialAnswers);
+    setQuestionResults(initialResults);
 
-    setQuestionResults({});
-
-    setCurrentQuestion(0);
+    if (
+      typeof savedDrafts.currentQuestion === "number" &&
+      savedDrafts.currentQuestion >= 0 &&
+      savedDrafts.currentQuestion < detail.questions.length
+    ) {
+      setCurrentQuestion(savedDrafts.currentQuestion);
+    } else {
+      setCurrentQuestion(0);
+    }
 
     setFailedRunCount(0);
-
     setOpenedHints([]);
-
     setShowSubmitModal(false);
-
     setSubmissionQueue([]);
-
     setAlert({
       open: false,
       title: "",
       description: "",
     });
   }, [detail]);
+
+  // Save active progress to localStorage so refreshing does not lose work
+  useEffect(() => {
+    if (!detail?.id || Object.keys(answers).length === 0) return;
+    const user = storage.getUser();
+    const draftKey = `case_draft_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
+    try {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          answers,
+          currentQuestion,
+        }),
+      );
+    } catch {
+      // ignore
+    }
+  }, [answers, currentQuestion, detail?.id]);
+
 
   const question = detail.questions[currentQuestion];
 
@@ -302,6 +357,7 @@ export default function CaseDetail({ detail }: Props) {
       questionIndex: currentQuestion,
       status: "queued",
       payload: {
+        testId: question.id,
         soal: question.description,
         expectedOutput: question.expectedOutput,
         studentCode: answers[question.id] ?? "",
@@ -345,12 +401,14 @@ export default function CaseDetail({ detail }: Props) {
             code={answers[question.id] ?? ""}
             disabled={isCurrentSubmitted}
             running={running}
+            isAssessing={isCurrentQueued}
             hasQueuedSubmission={hasRunningSubmission}
             queuePosition={currentQueuePosition}
             onCodeChange={handleCodeChange}
             onRun={handleRun}
             onSubmit={() => setShowSubmitModal(true)}
           />
+
 
           <RightPanel
             hints={question.hints}
