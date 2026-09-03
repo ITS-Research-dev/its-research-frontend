@@ -184,7 +184,7 @@ export default function AssessmentHistory({
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
-        emptyTitle="Belum ada asesmen"
+        emptyTitle="Belum Ada Riwayat Asesmen"
         emptyDescription="Riwayat asesmen akan muncul di sini."
       />
     </section>

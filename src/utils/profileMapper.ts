@@ -114,7 +114,7 @@ export function formatIntoProfileSummary(
     totalCases,
     competencies,
     competencyTrend,
-    averageScore: countAverage / totalCases,
+    averageScore: totalCases > 0 ? countAverage / totalCases : 0,
     totalMaterials: nameMaterials.length,
     levelTrend: competencyTrend,
     raw: datas,

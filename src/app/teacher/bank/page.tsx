@@ -23,7 +23,7 @@ import QuestionFormModal, {
 
 import { BankMaterial, BankQuestion } from "@/types/bank";
 import { useBank } from "@/hooks/useBank";
-import Loading from "@/components/common/Loading";
+import EmptyState from "@/components/common/EmptyState";
 import bankService from "@/services/bank.service";
 import { useClassStore } from "@/store/class.store";
 type Tab = "material" | "question" | "reference";

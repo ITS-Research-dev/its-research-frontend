@@ -1,5 +1,6 @@
 "use client";
 
+import EmptyState from "@/components/common/EmptyState";
 import PageHeader from "@/components/common/PageHeader";
 import MonitoringSummary from "@/components/monitoring/MonitoringSummary";
 import { useMonitoring } from "@/hooks/useMonitoring";
@@ -9,29 +10,19 @@ export default function TeacherMonitoringPage() {
 
   if (loading) {
     return (
-      <div className="space-y-8">
-        <PageHeader
-          title="Monitoring Kelas"
-          description="Pantau perkembangan kompetensi dan performa siswa dalam kelas."
-        />
-        <div className="flex items-center justify-center py-20 text-description text-sm">
-          Memuat data monitoring...
-        </div>
-      </div>
+      <EmptyState
+        title="Monitoring Kelas"
+        description="Memuat data monitoring..."
+      />
     );
   }
 
   if (!data) {
     return (
-      <div className="space-y-8">
-        <PageHeader
-          title="Monitoring Kelas"
-          description="Pantau perkembangan kompetensi dan performa siswa dalam kelas."
-        />
-        <div className="flex items-center justify-center py-20 text-description text-sm">
-          Tidak ada data kelas yang tersedia.
-        </div>
-      </div>
+      <EmptyState
+        title="Monitoring Kelas"
+        description="Tidak ada data kelas yang tersedia."
+      />
     );
   }
 
