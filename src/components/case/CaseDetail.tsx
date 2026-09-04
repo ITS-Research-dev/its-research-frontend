@@ -168,8 +168,6 @@ export default function CaseDetail({ detail }: Props) {
     [submissionQueue, question.id],
   );
 
-  const isCurrentSubmitted = currentResult?.submitted || isCurrentQueued;
-
   // Check if there's a running submission (for submit button label)
   const hasRunningSubmission = useMemo(
     () => submissionQueue.some((item) => item.status === "running"),
@@ -366,7 +364,10 @@ export default function CaseDetail({ detail }: Props) {
       submittedAt: Date.now(),
     };
 
-    setSubmissionQueue((prev) => [...prev, newItem]);
+    setSubmissionQueue((prev) => [
+      ...prev.filter((item) => item.questionId !== question.id),
+      newItem,
+    ]);
   };
 
   // ===== Queue Navigation =====
@@ -399,7 +400,8 @@ export default function CaseDetail({ detail }: Props) {
 
           <CodeEditor
             code={answers[question.id] ?? ""}
-            disabled={isCurrentSubmitted}
+            disabled={isCurrentQueued}
+            isSubmitted={Boolean(currentResult?.submitted)}
             running={running}
             isAssessing={isCurrentQueued}
             hasQueuedSubmission={hasRunningSubmission}
@@ -425,9 +427,13 @@ export default function CaseDetail({ detail }: Props) {
 
       <ConfirmModal
         open={showSubmitModal}
-        title="Submit Jawaban?"
-        description="Kode kamu akan dinilai oleh AI. Proses ini bisa membutuhkan waktu beberapa menit. Setelah disubmit, jawaban tidak dapat diubah kembali."
-        confirmText="Submit & Nilai"
+        title={currentResult?.submitted ? "Submit Ulang Jawaban?" : "Submit Jawaban?"}
+        description={
+          currentResult?.submitted
+            ? "Kode kamu akan dinilai kembali oleh AI. Proses ini bisa membutuhkan waktu beberapa menit. Nilai terbaru akan disimpan ke sistem."
+            : "Kode kamu akan dinilai oleh AI. Proses ini bisa membutuhkan waktu beberapa menit."
+        }
+        confirmText={currentResult?.submitted ? "Submit Ulang & Nilai" : "Submit & Nilai"}
         cancelText="Batal"
         loading={false}
         onClose={() => setShowSubmitModal(false)}

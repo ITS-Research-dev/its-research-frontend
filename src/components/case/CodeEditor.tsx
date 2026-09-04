@@ -19,6 +19,8 @@ interface Props {
 
   disabled?: boolean;
 
+  isSubmitted?: boolean;
+
   running?: boolean;
 
   isAssessing?: boolean;
@@ -139,6 +141,7 @@ function formatRemainingStdout(stdout: string, prompts: string[]): string {
 export default function CodeEditor({
   code,
   disabled = false,
+  isSubmitted = false,
   running = false,
   isAssessing = false,
   hasQueuedSubmission = false,
@@ -236,14 +239,17 @@ export default function CodeEditor({
 
   // Determine submit button text
   const getSubmitLabel = () => {
-    if (disabled && queuePosition > 0) {
+    if (isAssessing) {
+      return "Menilai...";
+    }
+    if (queuePosition > 0) {
       return `Antrian #${queuePosition}`;
     }
-    if (disabled) {
-      return "Sudah Disubmit";
-    }
     if (hasQueuedSubmission) {
-      return "Submit (Antrian)";
+      return isSubmitted ? "Submit Ulang (Antrian)" : "Submit (Antrian)";
+    }
+    if (isSubmitted) {
+      return "Submit Ulang";
     }
     return "Submit";
   };
@@ -292,13 +298,13 @@ export default function CodeEditor({
         <Button
           variant="secondary"
           loading={running}
-          disabled={disabled}
+          disabled={disabled || isAssessing}
           onClick={handleRun}
         >
           Uji Coba
         </Button>
 
-        <Button disabled={disabled} onClick={onSubmit}>
+        <Button disabled={disabled || isAssessing} onClick={onSubmit}>
           {getSubmitLabel()}
         </Button>
       </div>
