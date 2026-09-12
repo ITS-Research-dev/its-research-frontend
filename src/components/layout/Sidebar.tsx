@@ -41,7 +41,7 @@ export default function Sidebar({ role }: SidebarProps) {
 
   const LogoutIcon = logoutMenu?.icon;
 
-  const { selectedClassId, setSelectedClassId } = useClassStore();
+  const { selectedClassId, setSelectedClass, setSelectedClassId } = useClassStore();
 
   const handleLogout = async () => {
     setOpenLogout(false);
@@ -75,7 +75,7 @@ export default function Sidebar({ role }: SidebarProps) {
               (item: any) => item.value === selectedClassId,
             );
             if (!selectedClassId || !exists) {
-              setSelectedClassId(all[0].value);
+              setSelectedClass(all[0].value, all[0].label);
             }
           }
         })
@@ -85,7 +85,7 @@ export default function Sidebar({ role }: SidebarProps) {
               (item) => item.value === selectedClassId,
             );
             if (!selectedClassId || !exists) {
-              setSelectedClassId(initialList[0].value);
+              setSelectedClass(initialList[0].value, initialList[0].label);
             }
           }
         });
@@ -111,7 +111,10 @@ export default function Sidebar({ role }: SidebarProps) {
             label="Pilih Kelas"
             placeholder="Pilih kelas"
             value={selectedClassId}
-            onChange={setSelectedClassId}
+            onChange={(id) => {
+              const found = classes.find((c) => c.value === id);
+              setSelectedClass(id, found?.label ?? "");
+            }}
             items={classes}
           />
         </div>

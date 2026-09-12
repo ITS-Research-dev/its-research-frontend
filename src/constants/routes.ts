@@ -22,6 +22,8 @@ export const ROUTES = {
         `/teacher/monitoring/classes/${encodeURIComponent(className)}`,
       MONITORING_STUDENT: (className: string, studentId: string) =>
         `/teacher/monitoring/classes/${encodeURIComponent(className)}/students/${studentId}`,
+      MONITORING_TREND: (classId: string) =>
+        `/teacher/monitoring/trend?classId=${encodeURIComponent(classId)}`,
       STUDENT_PROFILE: "/teacher/student-profile",
     },
     GEMINI: {

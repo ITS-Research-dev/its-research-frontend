@@ -4,14 +4,20 @@ import { ROUTES } from "@/constants/routes";
 
 import { AssessmentLevel } from "@/types/asessment";
 import {
+  ApiMonitoringTrendResponse,
   MonitoringData,
   MonitoringStudent,
   MonitoringStudentDetail,
+  MonitoringTopicScore,
 } from "@/types/monitoring";
 
 import { ProfileResponse, ProfileSummary } from "@/types/profile";
 
 import { useAuthStore } from "@/store/auth.store";
+import { useClassStore } from "@/store/class.store";
+import { storage } from "@/utils/storage";
+import dashboardService from "@/services/dashboard.service";
+import { formatIntoProfileSummary } from "@/utils/profileMapper";
 
 /* ------------------------------------------------------------------
    Raw shapes returned by the backend
@@ -359,68 +365,176 @@ function buildProfileSummary(
 
 class MonitoringService {
   /**
+   * Mendapatkan classId dan className aktif dari Auth / Class Store
+   */
+  getActiveClassInfo(preferredClassId?: string): {
+    classId: string;
+    className: string;
+  } {
+    const { selectedClassId: storeSelectedId, selectedClassName: storeSelectedName } =
+      useClassStore.getState();
+    const classesFromStorage = storage.getClass();
+
+    const targetClassId =
+      preferredClassId ||
+      storeSelectedId ||
+      classesFromStorage[0]?.value ||
+      "";
+
+    // Prioritaskan selectedClassName dari store jika class ID cocok
+    if (
+      storeSelectedName &&
+      (!preferredClassId || preferredClassId === storeSelectedId)
+    ) {
+      return { classId: targetClassId, className: storeSelectedName };
+    }
+
+    // Fallback: cari dari storage
+    const foundItem =
+      classesFromStorage.find((c) => c.value === targetClassId) ||
+      classesFromStorage[0];
+
+    return {
+      classId: targetClassId,
+      className: foundItem?.label || "",
+    };
+  }
+
+  /**
+   * Mengambil data trend monitoring berdasarkan classId dari Auth store.
+   * GET /teacher/monitoring/trend?classId={classId}
+   */
+  async getTrend(classId: string): Promise<ApiMonitoringTrendResponse> {
+    const response = await api.get<ApiMonitoringTrendResponse>(
+      ROUTES.API.TEACHER.MONITORING_TREND(classId),
+    );
+    return response.data;
+  }
+
+  /**
    * Mengambil data monitoring kelas.
    */
-  async getMonitoring(): Promise<MonitoringData> {
+  async getMonitoring(classIdParam?: string): Promise<MonitoringData> {
     /* =====================================================
-       FETCH LIST KELAS
+       1. AMBIL CLASS ID & CLASS NAME DARI AUTH STORE / CLASS STORE
     ===================================================== */
+    const { classId, className: authClassName } =
+      this.getActiveClassInfo(classIdParam);
+
+    /* =====================================================
+       2. FETCH TREND & DASHBOARD DATA (AGAR DENGAN DASHBOARD KONSISTEN SAMPAI DETIL)
+    ===================================================== */
+    let apiCompetencyTrend: ProfileSummary["competencyTrend"] = {};
+    let apiLevelTrend: ProfileSummary["levelTrend"] = {};
+    let apiTopicScores: MonitoringTopicScore[] = [];
+
+    if (classId) {
+      // 2a. Coba ambil trend dari endpoint monitoring trend
+      try {
+        const trendData: any = await this.getTrend(classId);
+        if (
+          trendData?.competencyTrend &&
+          Object.keys(trendData.competencyTrend).length > 0
+        ) {
+          apiCompetencyTrend = trendData.competencyTrend;
+          apiLevelTrend = trendData.levelTrend || trendData.competencyTrend;
+        }
+      } catch (error) {
+        console.warn("Failed to fetch monitoring trend:", error);
+      }
+
+      // 2b. Jika endpoint monitoring trend belum mengirim data lengkap, ambil dari dashboard service
+      if (Object.keys(apiCompetencyTrend).length === 0) {
+        try {
+          const dashTrend = await dashboardService.getTrend(classId);
+          if (
+            dashTrend?.competencyTrend &&
+            Object.keys(dashTrend.competencyTrend).length > 0
+          ) {
+            apiCompetencyTrend = dashTrend.competencyTrend;
+            apiLevelTrend = dashTrend.levelTrend || dashTrend.competencyTrend;
+          }
+        } catch (error) {
+          console.warn(
+            "Failed to fetch dashboard trend for monitoring:",
+            error,
+          );
+        }
+      }
+
+      // 2c. Ambil topicScores dari dashboard service agar 100% persis dengan Dashboard Guru
+      try {
+        const dashData = await dashboardService.getDashboard(classId);
+        if (dashData?.topicScores && dashData.topicScores.length > 0) {
+          apiTopicScores = dashData.topicScores;
+        }
+      } catch (error) {
+        console.warn(
+          "Failed to fetch dashboard topic scores for monitoring:",
+          error,
+        );
+      }
+    }
+
+    /* =====================================================
+       3. FETCH DAFTAR KELAS & RESOLVE CLASS NAME
+    ===================================================== */
+    let resolvedClassName = authClassName;
 
     const response = await api.get<ApiClass[]>(
       ROUTES.API.TEACHER.MONITORING_CLASSES,
     );
-
     const classes = response.data;
 
-    /* =====================================================
-       JIKA BELUM ADA KELAS
-    ===================================================== */
-
-    if (classes.length === 0) {
+    if (classes.length === 0 && !resolvedClassName) {
       return {
         summary: {
           className: "—",
           totalStudents: 0,
           averageScore: 0,
         },
-
         students: [],
-
-        topicScores: [],
-
-        competencyTrend: {},
-
-        levelTrend: {},
-
-        topics: [],
+        topicScores: apiTopicScores,
+        competencyTrend: apiCompetencyTrend,
+        levelTrend: apiLevelTrend,
+        topics: apiTopicScores.map((t) => t.topic),
       };
     }
 
+    if (classes.length > 0) {
+      // 1. Exact match
+      const exactMatch = classes.find((c) => c.nama === resolvedClassName);
+      if (exactMatch) {
+        resolvedClassName = exactMatch.nama;
+      } else {
+        // 2. Case-insensitive match
+        const ciMatch = classes.find(
+          (c) => c.nama.toLowerCase() === resolvedClassName.toLowerCase(),
+        );
+        if (ciMatch) {
+          resolvedClassName = ciMatch.nama;
+        } else if (!resolvedClassName) {
+          // 3. Fallback ke kelas pertama hanya jika resolvedClassName benar-benar kosong
+          resolvedClassName = classes[0].nama;
+        }
+        // Jika ada resolvedClassName tapi tidak match → tetap gunakan nilai dari store
+        // agar request ke API menggunakan nama yang sesuai kelas yang dipilih
+      }
+    }
+
     /* =====================================================
-       PILIH KELAS GURU
+       4. FETCH DETAIL KELAS
     ===================================================== */
-
-    const currentUser = useAuthStore.getState().user;
-
-    const primary =
-      classes.find((item) => item.wali === currentUser?.name) ?? classes[0];
-
-    /* =====================================================
-       FETCH DETAIL KELAS
-    ===================================================== */
-
     const detailRes = await api.get<ApiClassDetail>(
-      ROUTES.API.TEACHER.MONITORING_CLASS(primary.nama),
+      ROUTES.API.TEACHER.MONITORING_CLASS(resolvedClassName),
     );
-
     const detail = detailRes.data;
 
     /* =====================================================
-       FETCH DETAIL SETIAP SISWA
-
-       Endpoint tetap sama dengan sebelumnya:
-       MONITORING_STUDENT(className, studentId)
+       5. FETCH DETAIL SETIAP SISWA & KUMPULKAN RIWAYAT
+       Endpoint: MONITORING_STUDENT(className, studentId)
     ===================================================== */
+    const allRawAssessments: ProfileResponse[] = [];
 
     const students: MonitoringStudent[] = await Promise.all(
       detail.siswa.map(async (student) => {
@@ -435,6 +549,8 @@ class MonitoringService {
           studentData.scores,
         );
 
+        allRawAssessments.push(...raw);
+
         const profile = buildProfileSummary(
           raw,
           studentData.nilai,
@@ -442,94 +558,61 @@ class MonitoringService {
           studentData.scores,
         );
 
-        /**
-         * Ambil level asesmen terakhir.
-         */
         const latestAssessment =
           raw.length > 0 ? raw[raw.length - 1] : undefined;
 
         const assessments = raw.map((item) => ({
           id: item.id,
-
           topic: item.test.topic.title,
-
           title: item.test.title,
-
           score: item.averageScore,
-
           level: normalizeAssessmentLevel(item.level),
-
           hintsUsed: item.hintUsage,
-
           duration: "-",
-
           feedback: item.teacherSuggestion ?? item.aiSuggestion ?? "-",
-
           competencies: [
             {
               name: "Fungsionalitas",
-
               score: item.teacherScore.fungsionalitas,
             },
-
             {
               name: "Logika",
-
               score: item.teacherScore.logika,
             },
-
             {
               name: "Syntax",
-
               score: item.teacherScore.syntax,
             },
-
             {
               name: "Code Style",
-
               score: item.teacherScore.code_style,
             },
-
             {
               name: "Dokumentasi",
-
               score: item.teacherScore.dokumentasi,
             },
-
             {
               name: "Konsep",
-
               score: item.teacherScore.konsep,
             },
           ],
-
-          /**
-           * API monitoring saat ini belum
-           * mengirim detail pertanyaan.
-           */
           questions: [],
         }));
 
         return {
           id: student.id,
-
           name: studentData.nama,
-
           averageScore: studentData.nilai,
-
           level: latestAssessment ? latestAssessment.level : "Belum Ada",
-
           competencies: profile.competencies,
-
           assessments,
         };
       }),
     );
 
     /* =====================================================
-       HITUNG RATA-RATA SKOR PER TOPIK
+       6. HITUNG FALLBACK SKOR PER TOPIK JIKA API DARI DASHBOARD KOSONG
     ===================================================== */
-
     const topicMap: Record<
       string,
       {
@@ -548,72 +631,118 @@ class MonitoringService {
         }
 
         topicMap[assessment.topic].total += assessment.score;
-
         topicMap[assessment.topic].count += 1;
       });
     });
 
-    const topicScores = Object.entries(topicMap).map(([topic, value]) => ({
-      topic,
+    const fallbackTopicScores = Object.entries(topicMap).map(
+      ([topic, value]) => ({
+        topic,
+        score: Math.round(value.total / value.count),
+      }),
+    );
 
-      score: Math.round(value.total / value.count),
-    }));
-
-    /* =====================================================
-       BUILD COMPETENCY TREND KELAS
-    ===================================================== */
-
-    const competencyTrend: ProfileSummary["competencyTrend"] = {};
-
-    topicScores.forEach((item) => {
-      competencyTrend[item.topic] = {
-        total: {
-          avg: item.score,
-
-          count: 1,
-        },
-      };
-    });
+    const finalTopicScores =
+      apiTopicScores.length > 0 ? apiTopicScores : fallbackTopicScores;
 
     /* =====================================================
-       LEVEL TREND
-
-       Sementara menggunakan struktur yang sama agar
-       komponen chart tetap kompatibel.
+       7. BUILD FALLBACK COMPETENCY & LEVEL TREND (JIKA API TREND KOSONG)
     ===================================================== */
+    let fallbackCompetencyTrend: ProfileSummary["competencyTrend"] = {};
 
-    const levelTrend = competencyTrend;
+    if (Object.keys(apiCompetencyTrend).length === 0) {
+      const trendBucketMap: Record<
+        string,
+        Record<string, { sum: number; count: number }>
+      > = {};
+
+      allRawAssessments.forEach((item) => {
+        const date = new Date(item.createdAt);
+        const dayOfMonth = date.getDate();
+        const weekStart = Math.floor((dayOfMonth - 1) / 7) * 7 + 1;
+        const weekEnd = weekStart + 6;
+        const weekLabel = `${String(weekStart).padStart(2, "0")}-${String(
+          weekEnd,
+        ).padStart(2, "0")}`;
+
+        const monthLabel = String(date.getMonth() + 1).padStart(2, "0");
+        const topicTitle = item.test.topic.title || "Umum";
+
+        for (const label of [weekLabel, monthLabel]) {
+          if (!trendBucketMap[label]) {
+            trendBucketMap[label] = {};
+          }
+
+          if (!trendBucketMap[label]["total"]) {
+            trendBucketMap[label]["total"] = { sum: 0, count: 0 };
+          }
+          trendBucketMap[label]["total"].sum += item.averageScore;
+          trendBucketMap[label]["total"].count += 1;
+
+          if (!trendBucketMap[label][topicTitle]) {
+            trendBucketMap[label][topicTitle] = { sum: 0, count: 0 };
+          }
+          trendBucketMap[label][topicTitle].sum += item.averageScore;
+          trendBucketMap[label][topicTitle].count += 1;
+        }
+      });
+
+      for (const [label, bucket] of Object.entries(trendBucketMap)) {
+        fallbackCompetencyTrend[label] = {};
+        for (const [key, value] of Object.entries(bucket)) {
+          fallbackCompetencyTrend[label][key] = {
+            avg: Math.round(value.sum / value.count),
+            count: value.count,
+          };
+        }
+      }
+
+      if (Object.keys(fallbackCompetencyTrend).length === 0) {
+        const defaultWeeks = ["01-07", "08-14", "15-21", "22-28"];
+        const avg = detail.rataNilai || 0;
+        defaultWeeks.forEach((label) => {
+          fallbackCompetencyTrend[label] = {
+            total: { avg, count: 1 },
+          };
+          finalTopicScores.forEach((t) => {
+            fallbackCompetencyTrend[label][t.topic] = {
+              avg: t.score || avg,
+              count: 1,
+            };
+          });
+        });
+      }
+    }
+
+    const finalCompetencyTrend =
+      Object.keys(apiCompetencyTrend).length > 0
+        ? apiCompetencyTrend
+        : fallbackCompetencyTrend;
+
+    const finalLevelTrend =
+      Object.keys(apiLevelTrend).length > 0
+        ? apiLevelTrend
+        : finalCompetencyTrend;
 
     /* =====================================================
-       RETURN DATA
+       8. RETURN DATA
     ===================================================== */
-
     return {
       summary: {
         className: detail.nama,
-
         totalStudents: detail.totalSiswa,
-
         averageScore: detail.rataNilai,
       },
-
       students,
-
-      topicScores,
-
-      competencyTrend,
-
-      levelTrend,
-
-      topics: topicScores.map((item) => item.topic),
+      topicScores: finalTopicScores,
+      competencyTrend: finalCompetencyTrend,
+      levelTrend: finalLevelTrend,
+      topics: finalTopicScores.map((item) => item.topic),
     };
   }
 
   /**
    * Mengambil detail satu siswa.
-   *
-   * Endpoint dan alur fetch tetap sama
-   * dengan implementasi sebelumnya.
    */
   async getStudentDetail(
     studentId: string,
@@ -621,9 +750,10 @@ class MonitoringService {
   ): Promise<MonitoringStudentDetail> {
     let resolvedClass = className;
 
-    /* =====================================================
-       CARI KELAS JIKA BELUM DIKIRIM
-    ===================================================== */
+    if (!resolvedClass) {
+      const activeInfo = this.getActiveClassInfo();
+      resolvedClass = activeInfo.className;
+    }
 
     if (!resolvedClass) {
       const classesRes = await api.get<ApiClass[]>(
@@ -649,17 +779,20 @@ class MonitoringService {
 
     const studentData = res.data;
 
+    /* =====================================================
+       MAP RIWAYAT KE FORMAT ProfileResponse[]
+       (sama persis dengan yang dikirim endpoint /siswa/profile)
+    ===================================================== */
     const raw = mapRiwayatToProfileResponse(
       studentData.riwayat,
       studentData.scores,
     );
 
-    const profile = buildProfileSummary(
-      raw,
-      studentData.nilai,
-      studentData.hint,
-      studentData.scores,
-    );
+    /* =====================================================
+       GUNAKAN formatIntoProfileSummary — SAMA PERSIS
+       DENGAN HALAMAN PROFIL & RIWAYAT SISWA
+    ===================================================== */
+    const profile = formatIntoProfileSummary(raw);
 
     /* =====================================================
        HITUNG SKOR BERDASARKAN TOPIK

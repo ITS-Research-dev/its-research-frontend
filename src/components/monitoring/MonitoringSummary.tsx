@@ -14,36 +14,6 @@ interface Props {
   data: MonitoringData;
 }
 
-const dummyTrend = {
-  "01-07": {
-    total: {
-      avg: 76,
-      count: 1,
-    },
-  },
-
-  "08-14": {
-    total: {
-      avg: 79,
-      count: 1,
-    },
-  },
-
-  "15-21": {
-    total: {
-      avg: 81,
-      count: 1,
-    },
-  },
-
-  "22-28": {
-    total: {
-      avg: 84,
-      count: 1,
-    },
-  },
-};
-
 export default function MonitoringSummary({ data }: Props) {
   const topics = data.topicScores.map((item) => item.topic);
 
@@ -75,9 +45,9 @@ export default function MonitoringSummary({ data }: Props) {
 
       <TopicScoreDistribution data={data.topicScores} />
 
-      <CompetencyTrendChart entries={dummyTrend} topics={topics} />
+      <CompetencyTrendChart entries={data.competencyTrend} topics={topics} />
 
-      <LevelTrendChart entries={dummyTrend} topics={topics} />
+      <LevelTrendChart entries={data.levelTrend} topics={topics} />
 
       {/* TABLE */}
 

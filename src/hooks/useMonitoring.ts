@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { monitoringService } from "@/services/monitoring.service";
+import { useClassStore } from "@/store/class.store";
 
 import { MonitoringData, MonitoringStudentDetail } from "@/types/monitoring";
 
@@ -10,17 +11,20 @@ export function useMonitoring() {
   const [data, setData] = useState<MonitoringData>();
   const [loading, setLoading] = useState(true);
 
+  const selectedClassId = useClassStore((s) => s.selectedClassId);
+  const selectedClassName = useClassStore((s) => s.selectedClassName);
+
   const load = useCallback(async () => {
     try {
       setLoading(true);
 
-      const result = await monitoringService.getMonitoring();
+      const result = await monitoringService.getMonitoring(selectedClassId);
 
       setData(result);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedClassId, selectedClassName]);
 
   useEffect(() => {
     load();
