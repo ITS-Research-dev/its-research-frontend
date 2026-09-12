@@ -63,25 +63,7 @@ export default function Dropdown({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className={`
-  flex
-  h-11
-  w-full
-  items-center
-  justify-between
-
-  rounded-xl
-
-  border
-
-  bg-surface
-
-  px-4
-
-  transition
-
-  ${error ? "border-danger" : "border-border hover:border-primary"}
-`}
+        className={`flex h-11 w-full items-center justify-between rounded-xl border bg-surface px-4 transition ${error ? "border-danger" : "border-border hover:border-primary"}`}
       >
         <span className="flex min-w-0 flex-1 items-center gap-2 text-text">
           {selected?.icon}
@@ -102,8 +84,8 @@ export default function Dropdown({
             z-50
             mt-2
             w-full
-
-            overflow-hidden
+            max-h-40
+            overflow-auto
 
             rounded-xl
 
