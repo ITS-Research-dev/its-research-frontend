@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import Editor, { OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
@@ -44,6 +44,7 @@ export default function MonacoEditor({
   onChange,
 }: Props) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const [fontSize, setFontSize] = useState(14);
 
   const handleMount: OnMount = (editorInstance, monaco) => {
     editorRef.current = editorInstance;
@@ -52,14 +53,35 @@ export default function MonacoEditor({
 
     registerPythonLanguage(monaco);
 
-    monaco.editor.setTheme("vs-white");
+    monaco.editor.setTheme("vs-dark");
+
+    editorInstance.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.Equal,
+      () => {
+        setFontSize((prev) => Math.min(prev + 1, 32));
+      }
+    );
+
+    editorInstance.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.Minus,
+      () => {
+        setFontSize((prev) => Math.max(prev - 1, 8));
+      }
+    );
+
+    editorInstance.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.Digit0,
+      () => {
+        setFontSize(14);
+      }
+    );
   };
 
   return (
     <Editor
       height="400px"
       language="python"
-      theme="vs-white"
+      theme="vs-dark"
       value={code}
       className={jetbrainsMono.className}
       onMount={handleMount}
@@ -67,6 +89,7 @@ export default function MonacoEditor({
       options={{
         ...editorOptions,
         readOnly: disabled,
+        fontSize,
       }}
     />
   );
