@@ -1,7 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import Button from "@/components/ui/Button";
 import { MonitoringData } from "@/types/monitoring";
 
@@ -10,25 +10,162 @@ interface Props {
 }
 
 export default function ExportClassButton({ data }: Props) {
-  const handleExport = () => {
-    /* =====================================================
-       SHEET 1: RINGKASAN KELAS
-    ===================================================== */
+  const handleExport = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Sistem Monitoring Sekolah";
+    workbook.created = new Date();
 
-    const summarySheet = [
-      {
-        "Nama Kelas": data.summary.className,
-        "Jumlah Siswa": data.summary.totalStudents,
-        "Rata-rata Nilai Kelas": data.summary.averageScore,
-        "Jumlah Topik": data.topics.length,
-      },
+    /* =====================================================
+       REUSABLE STYLES (TEMPLATE ELEGAN SEKOLAH)
+    ===================================================== */
+    const primaryHeaderFill: ExcelJS.Fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "1E3A8A" }, // Dark Navy Blue
+    };
+
+    const headerFont: Partial<ExcelJS.Font> = {
+      name: "Calibri",
+      size: 11,
+      bold: true,
+      color: { argb: "FFFFFF" },
+    };
+
+    const dataFont: Partial<ExcelJS.Font> = {
+      name: "Calibri",
+      size: 11,
+    };
+
+    const thinBorder: Partial<ExcelJS.Borders> = {
+      top: { style: "thin", color: { argb: "D1D5DB" } },
+      left: { style: "thin", color: { argb: "D1D5DB" } },
+      bottom: { style: "thin", color: { argb: "D1D5DB" } },
+      right: { style: "thin", color: { argb: "D1D5DB" } },
+    };
+
+    const zebraFill: ExcelJS.Fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "F8FAFC" }, // Light Slate
+    };
+
+    // Helper untuk merapikan Sheet Tabel
+    const formatSheet = (
+      sheet: ExcelJS.Worksheet,
+      columns: Partial<ExcelJS.Column>[],
+      rowsData: Record<string, any>[]
+    ) => {
+      sheet.columns = columns;
+
+      // Style Header
+      const headerRow = sheet.getRow(1);
+      headerRow.height = 28;
+      headerRow.eachCell((cell) => {
+        cell.fill = primaryHeaderFill;
+        cell.font = headerFont;
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = thinBorder;
+      });
+
+      // Insert Data & Apply Styling
+      rowsData.forEach((dataRow, rowIndex) => {
+        const row = sheet.addRow(dataRow);
+        row.height = 20;
+
+        row.eachCell({ includeEmpty: true }, (cell) => {
+          cell.font = dataFont;
+          cell.border = thinBorder;
+          cell.alignment = { vertical: "middle" };
+
+          // Striping baris genap
+          if (rowIndex % 2 === 1) {
+            cell.fill = zebraFill;
+          }
+        });
+      });
+
+      // Auto Adjust Column Width
+      sheet.columns.forEach((column) => {
+        let maxLength = 12;
+        column.eachCell?.({ includeEmpty: true }, (cell) => {
+          const columnText = cell.value ? cell.value.toString() : "";
+          if (columnText.length > maxLength) {
+            maxLength = columnText.length;
+          }
+        });
+        column.width = Math.min(maxLength + 4, 45); // Max width 45 agar tidak terlalu lebar
+      });
+    };
+
+    /* =====================================================
+       SHEET 1: RINGKASAN KELAS (DENGAN TAMPILAN CARD / TEMPLATE)
+    ===================================================== */
+    const summarySheet = workbook.addWorksheet("Ringkasan Kelas");
+    summarySheet.views = [{ showGridLines: true }];
+
+    // Header Judul Template
+    summarySheet.mergeCells("A1:C1");
+    const titleCell = summarySheet.getCell("A1");
+    titleCell.value = "LAPORAN RINGKASAN MONITORING KELAS";
+    titleCell.font = { name: "Calibri", size: 14, bold: true, color: { argb: "1E3A8A" } };
+    titleCell.alignment = { vertical: "middle" };
+    summarySheet.getRow(1).height = 30;
+
+    // Sub-Judul / Kelas Info
+    summarySheet.mergeCells("A2:C2");
+    const subTitleCell = summarySheet.getCell("A2");
+    subTitleCell.value = `Kelas: ${data.summary.className}`;
+    subTitleCell.font = { name: "Calibri", size: 11, italic: true, color: { argb: "4B5563" } };
+
+    // Tabel Ringkasan
+    const summaryTableHeaders = ["Metrik Kelas", "Nilai / Jumlah"];
+    summarySheet.getRow(4).values = summaryTableHeaders;
+    
+    const summaryData = [
+      ["Nama Kelas", data.summary.className],
+      ["Jumlah Siswa", data.summary.totalStudents],
+      ["Rata-rata Nilai Kelas", data.summary.averageScore],
+      ["Jumlah Topik", data.topics.length],
     ];
+
+    summaryData.forEach((row) => summarySheet.addRow(row));
+
+    // Style khusus Sheet Ringkasan
+    const summaryHeaderRow = summarySheet.getRow(4);
+    summaryHeaderRow.height = 24;
+    summaryHeaderRow.eachCell((cell) => {
+      cell.fill = primaryHeaderFill;
+      cell.font = headerFont;
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.border = thinBorder;
+    });
+
+    for (let r = 5; r <= 8; r++) {
+      const row = summarySheet.getRow(r);
+      row.height = 22;
+      row.getCell(1).font = { name: "Calibri", bold: true };
+      row.getCell(1).border = thinBorder;
+      row.getCell(2).border = thinBorder;
+      row.getCell(2).alignment = { horizontal: "center" };
+    }
+    summarySheet.getColumn(1).width = 25;
+    summarySheet.getColumn(2).width = 25;
 
     /* =====================================================
        SHEET 2: DATA SISWA
     ===================================================== */
+    const studentsSheet = workbook.addWorksheet("Data Siswa");
+    studentsSheet.views = [{ showGridLines: true }];
 
-    const studentsSheet = data.students.map((student, index) => ({
+    const studentColumns = [
+      { header: "No", key: "No" },
+      { header: "Nama Siswa", key: "Nama Siswa" },
+      { header: "Rata-rata Nilai", key: "Rata-rata Nilai" },
+      { header: "Level", key: "Level" },
+      { header: "Jumlah Asesmen", key: "Jumlah Asesmen" },
+    ];
+
+    const studentRows = data.students.map((student, index) => ({
       No: index + 1,
       "Nama Siswa": student.name,
       "Rata-rata Nilai": student.averageScore,
@@ -36,11 +173,26 @@ export default function ExportClassButton({ data }: Props) {
       "Jumlah Asesmen": student.assessments?.length ?? 0,
     }));
 
+    formatSheet(studentsSheet, studentColumns, studentRows);
+
     /* =====================================================
        SHEET 3: RIWAYAT ASESMEN
     ===================================================== */
+    const assessmentSheet = workbook.addWorksheet("Riwayat Asesmen");
+    assessmentSheet.views = [{ showGridLines: true }];
 
-    const assessmentSheet = data.students.flatMap((student) =>
+    const assessmentColumns = [
+      { header: "Nama Siswa", key: "Nama Siswa" },
+      { header: "Topik", key: "Topik" },
+      { header: "Judul Asesmen", key: "Judul Asesmen" },
+      { header: "Nilai", key: "Nilai" },
+      { header: "Level", key: "Level" },
+      { header: "Hint Digunakan", key: "Hint Digunakan" },
+      { header: "Durasi", key: "Durasi" },
+      { header: "Feedback", key: "Feedback" },
+    ];
+
+    const assessmentRows = data.students.flatMap((student) =>
       (student.assessments ?? []).map((assessment) => ({
         "Nama Siswa": student.name,
         Topik: assessment.topic,
@@ -50,48 +202,36 @@ export default function ExportClassButton({ data }: Props) {
         "Hint Digunakan": assessment.hintsUsed,
         Durasi: assessment.duration,
         Feedback: assessment.feedback,
-      })),
+      }))
     );
+
+    formatSheet(assessmentSheet, assessmentColumns, assessmentRows);
 
     /* =====================================================
        SHEET 4: SKOR KOMPETENSI
-
-       Menggunakan satu sumber skor:
-       - Teacher Score jika sudah di-override guru
-       - AI Score jika belum di-override
     ===================================================== */
+    const competencySheet = workbook.addWorksheet("Skor Kompetensi");
+    competencySheet.views = [{ showGridLines: true }];
 
-    const competencyScoreSheet = data.students.flatMap((student) =>
+    const competencyColumns = [
+      { header: "Nama Siswa", key: "Nama Siswa" },
+      { header: "Topik", key: "Topik" },
+      { header: "Judul Asesmen", key: "Judul Asesmen" },
+      { header: "Nilai", key: "Nilai" },
+      { header: "Fungsionalitas", key: "Fungsionalitas" },
+      { header: "Logika", key: "Logika" },
+      { header: "Syntax", key: "Syntax" },
+      { header: "Code Style", key: "Code Style" },
+      { header: "Dokumentasi", key: "Dokumentasi" },
+      { header: "Konsep", key: "Konsep" },
+    ];
+
+    const competencyRows = data.students.flatMap((student) =>
       (student.assessments ?? []).map((assessment) => {
-        /*
-         * Tentukan skor yang digunakan.
-         *
-         * Jika assessment memiliki flagOverride dan nilainya true,
-         * gunakan teacherScore.
-         *
-         * Jika tidak, gunakan aiScore.
-         *
-         * Fallback ke objek kosong agar export tetap aman.
-         */
-
         const assessmentData = assessment as typeof assessment & {
           flagOverride?: boolean;
-          aiScore?: {
-            fungsionalitas?: number;
-            logika?: number;
-            syntax?: number;
-            code_style?: number;
-            dokumentasi?: number;
-            konsep?: number;
-          };
-          teacherScore?: {
-            fungsionalitas?: number;
-            logika?: number;
-            syntax?: number;
-            code_style?: number;
-            dokumentasi?: number;
-            konsep?: number;
-          };
+          aiScore?: Record<string, number>;
+          teacherScore?: Record<string, number>;
         };
 
         const selectedScore =
@@ -101,125 +241,44 @@ export default function ExportClassButton({ data }: Props) {
 
         return {
           "Nama Siswa": student.name,
-
           Topik: assessment.topic,
-
           "Judul Asesmen": assessment.title,
-
           Nilai: assessment.score,
-
           Fungsionalitas: selectedScore?.fungsionalitas ?? 0,
-
           Logika: selectedScore?.logika ?? 0,
-
           Syntax: selectedScore?.syntax ?? 0,
-
           "Code Style": selectedScore?.code_style ?? 0,
-
           Dokumentasi: selectedScore?.dokumentasi ?? 0,
-
           Konsep: selectedScore?.konsep ?? 0,
         };
-      }),
+      })
     );
+
+    formatSheet(competencySheet, competencyColumns, competencyRows);
 
     /* =====================================================
        SHEET 5: SKOR TOPIK
     ===================================================== */
+    const topicSheet = workbook.addWorksheet("Skor Topik");
+    topicSheet.views = [{ showGridLines: true }];
 
-    const topicSheet = data.topicScores.map((item, index) => ({
+    const topicColumns = [
+      { header: "No", key: "No" },
+      { header: "Topik", key: "Topik" },
+      { header: "Rata-rata Skor", key: "Rata-rata Skor" },
+    ];
+
+    const topicRows = data.topicScores.map((item, index) => ({
       No: index + 1,
       Topik: item.topic,
       "Rata-rata Skor": item.score,
     }));
 
-    /* =====================================================
-       MEMBUAT WORKBOOK
-    ===================================================== */
-
-    const workbook = XLSX.utils.book_new();
+    formatSheet(topicSheet, topicColumns, topicRows);
 
     /* =====================================================
-       MEMBUAT WORKSHEET
+       DOWNLOAD / WRITE FILE
     ===================================================== */
-
-    const summaryWorksheet = XLSX.utils.json_to_sheet(summarySheet);
-
-    const studentsWorksheet = XLSX.utils.json_to_sheet(studentsSheet);
-
-    const assessmentWorksheet = XLSX.utils.json_to_sheet(assessmentSheet);
-
-    const competencyScoreWorksheet =
-      XLSX.utils.json_to_sheet(competencyScoreSheet);
-
-    const topicWorksheet = XLSX.utils.json_to_sheet(topicSheet);
-
-    /* =====================================================
-       MENGATUR LEBAR KOLOM
-    ===================================================== */
-
-    summaryWorksheet["!cols"] = [{ wch: 25 }, { wch: 18 }];
-
-    studentsWorksheet["!cols"] = [
-      { wch: 8 },
-      { wch: 30 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 18 },
-    ];
-
-    assessmentWorksheet["!cols"] = [
-      { wch: 30 },
-      { wch: 25 },
-      { wch: 35 },
-      { wch: 12 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 15 },
-      { wch: 60 },
-    ];
-
-    competencyScoreWorksheet["!cols"] = [
-      { wch: 30 },
-      { wch: 25 },
-      { wch: 35 },
-      { wch: 12 },
-      { wch: 18 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 15 },
-      { wch: 15 },
-      { wch: 12 },
-    ];
-
-    topicWorksheet["!cols"] = [{ wch: 8 }, { wch: 35 }, { wch: 20 }];
-
-    /* =====================================================
-       MENAMBAHKAN SHEET KE WORKBOOK
-    ===================================================== */
-
-    XLSX.utils.book_append_sheet(workbook, summaryWorksheet, "Ringkasan Kelas");
-
-    XLSX.utils.book_append_sheet(workbook, studentsWorksheet, "Data Siswa");
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      assessmentWorksheet,
-      "Riwayat Asesmen",
-    );
-
-    XLSX.utils.book_append_sheet(
-      workbook,
-      competencyScoreWorksheet,
-      "Skor Kompetensi",
-    );
-
-    XLSX.utils.book_append_sheet(workbook, topicWorksheet, "Skor Topik");
-
-    /* =====================================================
-       NAMA FILE
-    ===================================================== */
-
     const className =
       data.summary.className
         .replace(/\s+/g, "-")
@@ -227,11 +286,17 @@ export default function ExportClassButton({ data }: Props) {
 
     const fileName = `Monitoring-Kelas-${className}.xlsx`;
 
-    /* =====================================================
-       DOWNLOAD FILE
-    ===================================================== */
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
 
-    XLSX.writeFile(workbook, fileName);
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
   };
 
   return (
