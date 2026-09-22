@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BrainCircuit, Lightbulb } from "lucide-react";
 
 import { CompetencyScore } from "@/types/asessment";
 import { CaseDetail as CaseDetailType, RunHistory } from "@/types/case";
@@ -13,6 +14,8 @@ import RightPanel from "./RightPanel";
 
 import ConfirmModal from "../common/ConfirmModal";
 import AlertModal from "../common/AlertModal";
+import Modal from "../ui/Modal";
+import Button from "../ui/Button";
 
 import caseService, { mapScoringToCompetencies } from "@/services/case.service";
 import { mapPythonError } from "@/utils/errorMapper";
@@ -47,6 +50,8 @@ export default function CaseDetail({ detail }: Props) {
 
   const [showSubmitModal, setShowSubmitModal] = useState(false);
 
+  const [showStartInfoModal, setShowStartInfoModal] = useState(false);
+
   const [failedRunCount, setFailedRunCount] = useState(0);
 
   const [openedHints, setOpenedHints] = useState<number[]>([]);
@@ -78,6 +83,11 @@ export default function CaseDetail({ detail }: Props) {
 
     const initialAnswers: Record<string, string> = {};
     const initialResults: Record<string, QuestionResult> = {};
+    const hasWorkedBefore = detail.questions.some(
+      (question) => question.hasSubmitted || question.submission,
+    );
+    const introKey = `case_start_info_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
+    const hasAcceptedIntro = localStorage.getItem(introKey) === "true";
 
     detail.questions.forEach((q) => {
       if (q.hasSubmitted && q.submission) {
@@ -114,6 +124,7 @@ export default function CaseDetail({ detail }: Props) {
     setFailedRunCount(0);
     setOpenedHints([]);
     setShowSubmitModal(false);
+    setShowStartInfoModal(!hasWorkedBefore && !hasAcceptedIntro);
     setSubmissionQueue([]);
     setAlert({
       open: false,
@@ -383,6 +394,14 @@ export default function CaseDetail({ detail }: Props) {
     setOpenedHints((prev) => [...prev, nextHint]);
   };
 
+  const handleAcceptStartInfo = () => {
+    const user = storage.getUser();
+    const introKey = `case_start_info_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
+
+    localStorage.setItem(introKey, "true");
+    setShowStartInfoModal(false);
+  };
+
   return (
     <>
       <div className="space-y-8">
@@ -439,6 +458,52 @@ export default function CaseDetail({ detail }: Props) {
         onClose={() => setShowSubmitModal(false)}
         onConfirm={handleSubmit}
       />
+
+      <Modal
+        open={showStartInfoModal}
+        onClose={() => undefined}
+        title="Sebelum Mulai Mengerjakan"
+        footer={
+          <Button variant="primary" onClick={handleAcceptStartInfo}>
+            Setuju dan Mulai
+          </Button>
+        }
+      >
+        <div className="space-y-5 text-description">
+          <p>
+            Dalam studi kasus ini kamu dapat menggunakan bantuan hint dan
+            menerima feedback dari AI untuk memahami kualitas jawabanmu.
+          </p>
+
+          <div className="space-y-3">
+            <div className="flex gap-3 rounded-xl bg-primary/5 p-4">
+              <Lightbulb className="mt-0.5 shrink-0 text-primary" size={22} />
+              <div>
+                <h3 className="font-semibold text-text">Hint</h3>
+                <p className="mt-1 text-sm">
+                  Hint membantu mengarahkan pemikiranmu saat mengalami
+                  kesulitan. Penggunaan hint akan tercatat dalam penilaian.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 rounded-xl bg-secondary/5 p-4">
+              <BrainCircuit className="mt-0.5 shrink-0 text-secondary" size={22} />
+              <div>
+                <h3 className="font-semibold text-text">Feedback AI</h3>
+                <p className="mt-1 text-sm">
+                  Setelah jawaban dikirim, AI memberikan skor, analisis, dan
+                  saran untuk membantu memperbaiki solusi kamu.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-sm">
+            Dengan memilih setuju, kamu siap mulai mengerjakan studi kasus.
+          </p>
+        </div>
+      </Modal>
 
       <AlertModal
         open={alert.open}
