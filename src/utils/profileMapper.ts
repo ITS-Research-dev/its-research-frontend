@@ -1,14 +1,10 @@
-import { AssementDetailResponse, AssessmentDetail } from "@/types/asessment";
 import {
   ProfileResponse,
   Scoring,
   CompetencySummary,
   ProfileSummary,
-  LevelTrend,
-  CompetencyTrend,
   RawGraphProfile,
 } from "@/types/profile";
-import { Console } from "console";
 
 const SCORING_KEYS: (keyof Scoring)[] = [
   "fungsionalitas",
@@ -52,19 +48,19 @@ function checkMonth(startDate: string): string {
 export function formatIntoProfileSummary(
   datas: ProfileResponse[],
 ): ProfileSummary {
-  let countAverage = 0,
-    competencySum: Scoring = {
-      fungsionalitas: 0,
-      logika: 0,
-      syntax: 0,
-      code_style: 0,
-      dokumentasi: 0,
-      konsep: 0,
-    },
-    totalCases = 0,
-    totalHints = 0,
-    topicName: { [key: string]: number } = {},
-    competencyTrend: { [key: string]: { [key: string]: RawGraphProfile } } = {};
+  let countAverage = 0;
+  const competencySum: Scoring = {
+    fungsionalitas: 0,
+    logika: 0,
+    syntax: 0,
+    code_style: 0,
+    dokumentasi: 0,
+    konsep: 0,
+  };
+  let totalCases = 0;
+  let totalHints = 0;
+  const topicName: { [key: string]: number } = {};
+  const competencyTrend: { [key: string]: { [key: string]: RawGraphProfile } } = {};
 
   datas.map((data) => {
     const topicTitle = data.test.topic.title;
@@ -72,12 +68,18 @@ export function formatIntoProfileSummary(
     totalCases += 1;
     totalHints += data.hintUsage;
     topicName[topicTitle] = 0;
-    data.aiScore =
-      typeof data.aiScore === "string"
-        ? JSON.parse(data.aiScore)
-        : data.aiScore;
+
+    const effectiveScore =
+      data.flagOverride && data.teacherScore
+        ? typeof data.teacherScore === "string"
+          ? JSON.parse(data.teacherScore)
+          : data.teacherScore
+        : typeof data.aiScore === "string"
+          ? JSON.parse(data.aiScore)
+          : data.aiScore;
+
     SCORING_KEYS.forEach((element) => {
-      competencySum[element] += data.aiScore[element];
+      competencySum[element] += effectiveScore[element] ?? 0;
     });
 
     const week = checkWeek(data.createdAt);
