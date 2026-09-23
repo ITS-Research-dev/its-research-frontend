@@ -35,9 +35,9 @@ export const caseQuestions: Record<string, CaseQuestion[]> = {
       starterCode: "# Tulis kode kamu di sini\n",
 
       hints: [
-        "Gunakan operator = untuk memberi nilai.",
-        "Python tidak membutuhkan tipe data saat deklarasi.",
-        'Gunakan string "Marwa".',
+        "Gunakan operator `=` untuk memberi nilai pada variabel.",
+        "Python tidak membutuhkan kata kunci khusus untuk deklarasi tipe data.",
+        "Contoh penggunaan:\n```python\nnama = \"Marwa\"\nprint(nama)\n```",
       ],
     },
 
@@ -53,9 +53,9 @@ export const caseQuestions: Record<string, CaseQuestion[]> = {
       starterCode: "# Tulis kode kamu di sini\n",
 
       hints: [
-        "Gunakan print().",
-        "Gunakan integer.",
-        "Nama variabel adalah umur.",
+        "Gunakan `print()` untuk menampilkan nilai variabel ke layar.",
+        "Tipe data dasar pada Python:\n\n| Tipe Data | Contoh | Keterangan |\n| --- | --- | --- |\n| `int` | `20` | Bilangan bulat |\n| `str` | `\"Marwa\"` | Teks / String |\n| `float` | `3.14` | Bilangan desimal |",
+        "Nama variabel yang diminta adalah `umur`.",
       ],
     },
 
