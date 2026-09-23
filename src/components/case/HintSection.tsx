@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { ChevronDown, ChevronRight, Lightbulb } from "lucide-react";
+import MarkdownContent from "@/components/material/MarkdownContent";
 
 interface Props {
   hints: string[];
@@ -104,10 +105,8 @@ ease-in-out
               </button>
 
               {isExpanded && (
-                <div className="border-t border-border px-4 py-3">
-                  <p className="text-sm leading-7 text-description">
-                    {hints[hintIndex]}
-                  </p>
+                <div className="border-t border-border px-4 py-3 text-sm text-description">
+                  <MarkdownContent content={hints[hintIndex]} />
                 </div>
               )}
             </div>

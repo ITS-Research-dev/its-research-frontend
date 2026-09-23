@@ -11,6 +11,8 @@ export interface Case {
 export interface CaseItem extends Case {
   id: string;
   totalTest: number;
+  submittedCount?: number;
+  progressMessage?: string;
   startDate: string;
 }
 
@@ -20,6 +22,10 @@ export interface CaseCardData {
   status: CaseStatus;
   icon: CaseIcon;
   href: string;
+  totalTest: number;
+  submittedCount: number;
+  progressMessage?: string;
+  showProgress?: boolean;
 }
 
 export interface CaseQuestionSubmission {
