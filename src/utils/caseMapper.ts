@@ -30,5 +30,9 @@ export function mapToCaseCardData(item: CaseItem): CaseCardData {
     status: getStatus(item.startDate),
     icon: getIconById(item.id),
     href: `/student/case/${item.id}`,
+    totalTest: item.totalTest,
+    submittedCount: item.submittedCount ?? 0,
+    progressMessage: item.progressMessage,
+    showProgress: true,
   };
 }

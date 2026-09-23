@@ -22,6 +22,7 @@ import {
 import { RoundNumber } from "@/utils/global";
 import { DropdownItem } from "../common/DataTable";
 import TableLoading from "../common/TableLoading";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 interface Props {
   entries: { [key: string]: { [key: string]: RawGraphProfile } } | [];
@@ -125,9 +126,25 @@ export default function CompetencyTrendChart({ entries, topics }: Props) {
     <Card className="p-7">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-text">
-            Trend Rata-rata Kompetensi
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-text">
+              Trend Rata-rata Kompetensi
+            </h2>
+            <InfoTooltip
+              position="bottom"
+              title="Cara Membaca Grafik"
+              content={
+                <ul className="space-y-1.5 list-none">
+                  <li>📈 <strong>Sumbu X</strong>: periode waktu (minggu/bulan).</li>
+                  <li>📊 <strong>Sumbu Y</strong>: rata-rata skor kompetensi (0–100).</li>
+                  <li>🔵 <strong>Garis biru</strong>: perkembangan skor dari waktu ke waktu.</li>
+                  <li>🔘 <strong>Titik lingkaran</strong>: nilai rata-rata pada periode tersebut.</li>
+                  <li>📅 Gunakan filter <strong>Minggu/Bulan</strong> untuk ubah granularitas waktu.</li>
+                  <li>📚 Gunakan filter <strong>Topik</strong> untuk melihat kompetensi per topik.</li>
+                </ul>
+              }
+            />
+          </div>
 
           <p className="mt-1 text-description">
             Perkembangan rata-rata kompetensi berdasarkan hasil asesmen.

@@ -17,6 +17,7 @@ import {
 } from "recharts";
 
 import { AlertTriangle, BarChart2, Trophy } from "lucide-react";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 interface Props {
   data: TopicScore[];
@@ -61,9 +62,26 @@ export default function TopicScoreDistribution({ data }: Props) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-text">
-            Distribusi Skor per Topik
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-text">
+              Distribusi Skor per Topik
+            </h2>
+            <InfoTooltip
+              position="bottom"
+              title="Cara Membaca Grafik"
+              content={
+                <ul className="space-y-1.5 list-none">
+                  <li>📊 <strong>Sumbu X</strong> menunjukkan skor rata-rata (0–100).</li>
+                  <li>📝 <strong>Sumbu Y</strong> menampilkan nama topik pembelajaran.</li>
+                  <li>🔴 Skor <strong>&lt; 60</strong>: perlu perhatian lebih.</li>
+                  <li>🟡 Skor <strong>60–69</strong>: cukup, masih bisa ditingkatkan.</li>
+                  <li>🔵 Skor <strong>≥ 70</strong>: sudah baik.</li>
+                  <li>🔽 Tab <strong>Terendah</strong>: tampilkan 5 topik dengan skor terkecil.</li>
+                  <li>🔼 Tab <strong>Tertinggi</strong>: tampilkan 5 topik dengan skor terbesar.</li>
+                </ul>
+              }
+            />
+          </div>
 
           <p className="mt-1 text-description">
             Rata-rata nilai siswa pada setiap topik pembelajaran.

@@ -35,6 +35,34 @@ renderer.blockquote = ({ tokens }) => {
   `;
 };
 
+// table custom: styling container overflow, border, rounded, and hover
+renderer.table = ({ header, rows }) => {
+  return `
+    <div class="my-6 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-xs">
+      <table class="w-full text-left text-sm border-collapse">
+        <thead class="bg-slate-100/90 text-slate-800 font-semibold text-xs border-b border-slate-200">
+          ${header}
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          ${rows}
+        </tbody>
+      </table>
+    </div>
+  `;
+};
+
+renderer.tablerow = ({ text }) => {
+  return `<tr class="hover:bg-slate-50/80 transition-colors">${text}</tr>`;
+};
+
+renderer.tablecell = ({ text, header, align }) => {
+  const alignClass = align ? `text-${align}` : "text-left";
+  if (header) {
+    return `<th class="px-4 py-3 font-semibold text-slate-800 border-b border-slate-200 ${alignClass}">${text}</th>`;
+  }
+  return `<td class="px-4 py-2.5 text-slate-700 ${alignClass}">${text}</td>`;
+};
+
 // heading dengan anchor + spacing lebih lega
 renderer.heading = ({ tokens, depth }) => {
   const html = marked.parseInline(tokens.map((t: any) => t.raw ?? t.text).join(""));
@@ -48,9 +76,15 @@ renderer.heading = ({ tokens, depth }) => {
   return `<h${depth} id="${id}" class="${sizes[depth] ?? "text-lg font-semibold mt-6 mb-2"} text-slate-900 scroll-mt-24">${html}</h${depth}>`;
 };
 
-marked.use({ renderer });
+marked.use({ gfm: true, renderer });
 
-export default function MarkdownContent({ content }: { content: string }) {
+export default function MarkdownContent({
+  content,
+  className = "",
+}: {
+  content: string;
+  className?: string;
+}) {
   const html = useMemo(() => {
     try {
       const raw = marked.parse(content) as string;
@@ -63,7 +97,7 @@ export default function MarkdownContent({ content }: { content: string }) {
 
   return (
     <div
-      className="prose prose-slate max-w-none prose-p:leading-7 prose-p:text-slate-700 prose-strong:text-slate-900 prose-ol:my-4 prose-li:my-1"
+      className={`prose prose-slate max-w-none prose-p:leading-7 prose-p:text-slate-700 prose-strong:text-slate-900 prose-ol:my-4 prose-li:my-1 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-primary prose-code:font-mono prose-code:before:content-none prose-code:after:content-none ${className}`}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

@@ -19,6 +19,7 @@ import { LevelTrend, RawGraphProfile } from "@/types/profile";
 import { DropdownItem } from "../common/DataTable";
 import { RoundNumber } from "@/utils/global";
 import { AssessmentLevel } from "@/types/asessment";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 const colors = [
   "#ef4444",
@@ -166,7 +167,24 @@ export default function LevelTrendChart({ entries, topics }: Props) {
       {/* Header */}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-text">Trend Level Kemahiran</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-text">Trend Level Kemahiran</h2>
+            <InfoTooltip
+              position="bottom"
+              title="Cara Membaca Grafik"
+              content={
+                <ul className="space-y-1.5 list-none">
+                  <li>📊 <strong>Sumbu X</strong>: periode waktu (minggu/bulan).</li>
+                  <li>📊 <strong>Sumbu Y</strong>: skor rata-rata (0–100) yang mewakili level.</li>
+                  <li>🔴 <strong>Merah</strong>: Novice (0–49).</li>
+                  <li>🟡 <strong>Kuning</strong>: Beginner (50–69).</li>
+                  <li>🔵 <strong>Biru</strong>: Advance / Advance-Beginner (70–89).</li>
+                  <li>🟢 <strong>Hijau</strong>: Competent / Expert (90–100).</li>
+                  <li>📊 Hover pada batang untuk melihat nama level secara langsung.</li>
+                </ul>
+              }
+            />
+          </div>
 
           <p className="mt-1 text-description">
             Perkembangan level berdasarkan hasil asesmen.

@@ -31,7 +31,7 @@ export default function CasePage() {
           description="Belum ada studi kasus yang tersedia."
         />
       ) : (
-        <ItemList items={cases} />
+        <ItemList items={cases} showProgress={true} />
       )}
     </div>
   );
