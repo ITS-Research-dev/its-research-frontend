@@ -461,7 +461,7 @@ export default function CaseDetail({ detail }: Props) {
 
       <Modal
         open={showStartInfoModal}
-        onClose={() => undefined}
+        onClose={() => setShowStartInfoModal(false)}
         title="Sebelum Mulai Mengerjakan"
         footer={
           <Button variant="primary" onClick={handleAcceptStartInfo}>
@@ -476,24 +476,91 @@ export default function CaseDetail({ detail }: Props) {
           </p>
 
           <div className="space-y-3">
+            {/* Hint */}
             <div className="flex gap-3 rounded-xl bg-primary/5 p-4">
-              <Lightbulb className="mt-0.5 shrink-0 text-primary" size={22} />
-              <div>
-                <h3 className="font-semibold text-text">Hint</h3>
+              <Lightbulb
+                className="mt-0.5 shrink-0 text-primary"
+                size={22}
+              />
+
+              <div className="w-full">
+                <h3 className="font-semibold text-text">
+                  Hint
+                </h3>
+
                 <p className="mt-1 text-sm">
-                  Hint membantu mengarahkan pemikiranmu saat mengalami
-                  kesulitan. Penggunaan hint akan tercatat dalam penilaian.
+                  Hint akan keluar saat kamu melakukan kesalahan
+                  penulisan pada codingan. Penggunaan hint akan 
+                  tercatat dalam penilaian.
                 </p>
+
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm font-medium text-text">
+                    Gunakan hint secara bertahap dan sesuai kebutuhan:
+                  </p>
+
+                  {/* Hint 1 */}
+                  <div className="rounded-lg border border-primary/10 bg-white/50 p-3">
+                    <p className="text-sm font-semibold text-text">
+                      1. Hint Pseudocode
+                    </p>
+
+                    <p className="mt-1 text-xs leading-relaxed">
+                      Menampilkan gambaran logika dan alur penyelesaian masalah secara garis besar.
+                      Gunakan hint ini jika kamu masih kesulitan memahami
+                    </p>
+                  </div>
+
+                  {/* Hint 2 */}
+                  <div className="rounded-lg border border-primary/10 bg-white/50 p-3">
+                    <p className="text-sm font-semibold text-text">
+                      2. Hint Mengisi Blank Syntax
+                    </p>
+
+                    <p className="mt-1 text-xs leading-relaxed">
+                      Menampilkan struktur sintaks dengan bagian rumpang/kosong yang perlu kamu isi.
+                    </p>
+                  </div>
+
+                  {/* Hint 3 */}
+                  <div className="rounded-lg border border-primary/10 bg-white/50 p-3">
+                    <p className="text-sm font-semibold text-text">
+                      3. Hint Meng-copy Jawaban Asli
+                    </p>
+
+                    <p className="mt-1 text-xs leading-relaxed">
+                      Menampilkan kode solusi utuh yang dapat langsung disalin ke area pengerjaan.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-lg bg-primary/5 p-3">
+                  <p className="text-xs leading-relaxed">
+                    <span className="font-semibold text-text">
+                      Tips:
+                    </span>{" "}
+                    Gunakan hint jika dibutuhkan, tapi jangan bergantung sepenuhnya pada hint.
+                    Hint akan mempengaruhi level penilaian kamu, jadi gunakan secara bijak.
+                  </p>
+                </div>
               </div>
             </div>
 
+            {/* Feedback AI */}
             <div className="flex gap-3 rounded-xl bg-secondary/5 p-4">
-              <BrainCircuit className="mt-0.5 shrink-0 text-secondary" size={22} />
+              <BrainCircuit
+                className="mt-0.5 shrink-0 text-secondary"
+                size={22}
+              />
+
               <div>
-                <h3 className="font-semibold text-text">Feedback AI</h3>
+                <h3 className="font-semibold text-text">
+                  Feedback AI
+                </h3>
+
                 <p className="mt-1 text-sm">
-                  Setelah jawaban dikirim, AI memberikan skor, analisis, dan
-                  saran untuk membantu memperbaiki solusi kamu.
+                  Setelah jawaban dikirim, AI memberikan skor, analisis,
+                  dan saran untuk membantu memperbaiki solusi kamu.
                 </p>
               </div>
             </div>
