@@ -19,6 +19,7 @@ export function useAuth() {
     const response = await AuthService.login(payload);
 
     storage.saveToken(response.access_token);
+    storage.saveRefreshToken(response.refresh_token);
 
     storage.saveUser(response.user);
 
