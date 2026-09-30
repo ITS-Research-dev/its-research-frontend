@@ -3,6 +3,7 @@ import { User } from "@/types/auth";
 import Cookies from "js-cookie";
 
 const TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
 const USER_KEY = "user";
 
 export const storage = {
@@ -19,10 +20,24 @@ export const storage = {
     return localStorage.getItem(TOKEN_KEY);
   },
 
+  saveRefreshToken(token: string) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    Cookies.set(REFRESH_TOKEN_KEY, token, {
+      expires: 7,
+      sameSite: "lax",
+    });
+  },
+
+  getRefreshToken() {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  },
+
   removeToken() {
     localStorage.removeItem(TOKEN_KEY);
 
     Cookies.remove(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    Cookies.remove(REFRESH_TOKEN_KEY);
   },
 
   saveUser(user: User) {

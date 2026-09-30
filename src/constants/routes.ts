@@ -1,5 +1,6 @@
 export const ROUTES = {
   LOGIN: "/auth/login",
+  REFRESH: "/auth/refresh",
   LOGOUT: "/auth/logout",
 
   API: {

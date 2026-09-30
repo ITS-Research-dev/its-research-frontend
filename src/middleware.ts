@@ -17,7 +17,11 @@ function isTokenExpired(token: string): boolean {
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("access_token")?.value;
+  const refreshToken = request.cookies.get("refresh_token")?.value;
   const hasValidToken = Boolean(token && !isTokenExpired(token));
+  const hasValidRefreshToken = Boolean(
+    refreshToken && !isTokenExpired(refreshToken),
+  );
 
   const pathname = request.nextUrl.pathname;
 
@@ -26,15 +30,19 @@ export function middleware(request: NextRequest) {
   const isProtected =
     pathname.startsWith("/student") || pathname.startsWith("/teacher");
 
-  if (!hasValidToken && isProtected) {
+  if (!hasValidToken && !hasValidRefreshToken && isProtected) {
     const response = NextResponse.redirect(new URL("/auth/login", request.url));
     if (token) response.cookies.delete("access_token");
+    if (refreshToken) response.cookies.delete("refresh_token");
     return response;
   }
 
   if (!hasValidToken && token) {
     const response = NextResponse.next();
     response.cookies.delete("access_token");
+    if (refreshToken && !hasValidRefreshToken) {
+      response.cookies.delete("refresh_token");
+    }
     return response;
   }
 

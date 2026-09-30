@@ -22,5 +22,11 @@ export interface User {
 export interface LoginResponse {
   message: string;
   access_token: string;
+  refresh_token: string;
   user: User;
+}
+
+export interface RefreshResponse {
+  access_token: string;
+  refresh_token: string;
 }
