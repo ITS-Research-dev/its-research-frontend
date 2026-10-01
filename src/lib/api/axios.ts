@@ -4,88 +4,67 @@ import { storage } from "@/utils/storage";
 import axios, { InternalAxiosRequestConfig } from "axios";
 import type { RefreshResponse } from "@/types/auth";
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-    "ngrok-skip-browser-warning": "true",
-  },
-});
+const baseURL = process.env.NEXT_PUBLIC_API_URL;
+const defaultHeaders = {
+  "Content-Type": "application/json",
+  "ngrok-skip-browser-warning": "true",
+};
 
-let refreshRequest: Promise<string> | null = null;
+const api = axios.create({ baseURL, headers: defaultHeaders });
+
+let refreshPromise: Promise<string> | null = null;
+
+const refreshAccessToken = (): Promise<string> => {
+  if (!refreshPromise) {
+    const refreshToken = storage.getRefreshToken();
+    if (!refreshToken) return Promise.reject(new Error("Refresh token tidak tersedia"));
+
+    refreshPromise = axios.post<RefreshResponse>(`${baseURL}${ROUTES.REFRESH}`,{ refresh_token: refreshToken }, { headers: defaultHeaders })
+      .then(({ data }) => {
+        storage.saveToken(data.access_token);
+        storage.saveRefreshToken(data.refresh_token);
+        return data.access_token;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+};
+
+const forceLogout = () => {
+  storage.clear();
+  useAuthStore.getState().logout();
+
+  if (typeof window !== "undefined" && window.location.pathname !== ROUTES.LOGIN_PAGE) {
+    window.location.replace(ROUTES.LOGIN_PAGE);
+  }
+};
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const requestUrl = error.config?.url ?? "";
-    const isLoginRequest = requestUrl.includes(ROUTES.LOGIN);
-    const isRefreshRequest = requestUrl.includes(ROUTES.REFRESH);
-    const request = error.config as
-      | (InternalAxiosRequestConfig & { _retry?: boolean })
-      | undefined;
+    const status = error.response?.status;
+    const isAuthRequest = requestUrl.includes(ROUTES.LOGIN) || requestUrl.includes(ROUTES.REFRESH);
+    const request = error.config as | (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    if (
-      error.response?.status === 401 &&
-      request &&
-      !request._retry &&
-      !isLoginRequest &&
-      !isRefreshRequest
-    ) {
+   //? Handle 401 karena Token Expired
+    if (status === 401 && request && !request._retry && !isAuthRequest) {
       request._retry = true;
 
       try {
-        if (!refreshRequest) {
-          const refreshToken = storage.getRefreshToken();
-          if (!refreshToken) throw new Error("Refresh token tidak tersedia");
-
-          refreshRequest = api
-            .post<RefreshResponse>(ROUTES.REFRESH, {
-              refresh_token: refreshToken,
-            })
-            .then(({ data }) => {
-              storage.saveToken(data.access_token);
-              storage.saveRefreshToken(data.refresh_token);
-              return data.access_token;
-            })
-            .finally(() => {
-              refreshRequest = null;
-            });
-        }
-
-        const accessToken = await refreshRequest;
-        request.headers.Authorization = `Bearer ${accessToken}`;
+        const newAccessToken = await refreshAccessToken();
+        request.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(request);
       } catch (refreshError) {
-        storage.clear();
-        useAuthStore.getState().logout();
-
-        if (
-          typeof window !== "undefined" &&
-          window.location.pathname !== ROUTES.LOGIN_PAGE
-        ) {
-          window.location.replace(ROUTES.LOGIN_PAGE);
-        }
-
+        forceLogout();
         return Promise.reject(refreshError);
       }
     }
 
-    if (
-      !isLoginRequest &&
-      !isRefreshRequest &&
-      [401, 403].includes(error.response?.status)
-    ) {
-      storage.clear();
-      useAuthStore.getState().logout();
-
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname !== ROUTES.LOGIN_PAGE
-      ) {
-        window.location.replace(ROUTES.LOGIN_PAGE);
-      }
-    }
-
+    //? Handle 403 (Kebanyakan karena ngeakses halaman yang protected)
+    if (status === 403 && !isAuthRequest) forceLogout();
     return Promise.reject(error);
   },
 );

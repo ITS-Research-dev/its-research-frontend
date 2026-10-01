@@ -5,8 +5,10 @@ import { storage } from "@/utils/storage";
 interface AuthState {
   token: string | null;
   user: User | null;
+  refreshToken: string | null;
 
-  setToken: (token: string) => void;
+  setToken: (token: string | null) => void;
+  setRefreshToken: (refreshToken: string | null) => void;
   setUser: (user: User | null) => void;
 
   logout: () => void;
@@ -15,12 +17,17 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
-
+  refreshToken: null,
   user: null,
 
   setToken: (token) =>
     set({
       token,
+    }),
+
+  setRefreshToken: (refreshToken) =>
+    set({
+      refreshToken,
     }),
 
   setUser: (user) =>
@@ -31,6 +38,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () =>
     set({
       token: null,
+      refreshToken: null,
       user: null,
     }),
 
