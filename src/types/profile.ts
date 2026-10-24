@@ -53,6 +53,12 @@ export interface ProfileResponse {
   aiSuggestion?: string | null;
   teacherSuggestion?: string | null;
   flagOverride?: boolean;
+  /** Status score dari backend: 'Sudah di Verifikasi' | 'Perlu Verifikasi' | 'Sedang dikerjakan ulang' | string */
+  status?: string;
+  /** Apakah siswa diizinkan melakukan coba ulang */
+  allowRetry?: boolean;
+  /** Deadline coba ulang, ISO string */
+  retryDeadline?: string | null;
   test: {
     title: string;
     topic: { title: string };

@@ -6,19 +6,21 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import DataTable, { DropdownItem } from "@/components/common/DataTable";
 
-import { Eye, Search } from "lucide-react";
+import { Eye, RefreshCcw, Search } from "lucide-react";
 
 import { VerificationDetail, VerificationItem } from "@/types/verification";
 
 import { ReviewPayload } from "@/services/verification.service";
 import ReviewModal from "./ReviewModal";
 import VerificationDetailModal from "./VerificationDetailModal";
+import RetryModal from "./RetryModal";
 import AlertModal from "@/components/common/AlertModal";
 
 interface Props {
   data: VerificationItem[];
   details: VerificationDetail[];
   onReviewSubmit?: (id: string, payload: ReviewPayload) => Promise<void>;
+  onApproveRetry?: (id: string, deadline: string) => Promise<void>;
 }
 
 const statusItems: DropdownItem[] = [
@@ -27,20 +29,27 @@ const statusItems: DropdownItem[] = [
     value: "all",
   },
   {
-    label: "Perlu Verifikasi",
-    value: "Perlu Verifikasi",
+    label: "Perlu di verifikasi",
+    value: "Perlu di verifikasi",
   },
   {
-    label: "Selesai",
-    value: "Selesai",
+    label: "Sedang dikerjakan ulang",
+    value: "Sedang dikerjakan ulang",
+  },
+  {
+    label: "Selesai dikerjakan Ulang",
+    value: "Selesai dikerjakan Ulang",
+  },
+  {
+    label: "Sudah di Verifikasi",
+    value: "Sudah di Verifikasi",
   },
 ];
 
 function statusVariant(status: string) {
-  if (status === "Selesai") {
+  if (status === "Selesai" || status === "Selesai Dikerjakan Ulang")
     return "success";
-  }
-
+  if (status === "Sedang dikerjakan ulang") return "warning";
   return "danger";
 }
 
@@ -50,14 +59,15 @@ export default function VerificationTable({
   data,
   details,
   onReviewSubmit,
+  onApproveRetry,
 }: Props) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
 
   const [selectedReview, setSelectedReview] = useState<VerificationItem>();
-
   const [selectedDetail, setSelectedDetail] = useState<VerificationDetail>();
+  const [selectedRetry, setSelectedRetry] = useState<VerificationItem>();
 
   const [alertModal, setAlertModal] = useState<{
     open: boolean;
@@ -120,29 +130,69 @@ export default function VerificationTable({
     {
       header: "Aksi",
       render: (item: VerificationItem) => {
-        if (item.status === "Perlu Verifikasi") {
+        const detail = details.find((d) => d.id === item.id);
+
+        // ── Perlu Verifikasi: Review + opsi Beri Akses Coba Ulang ──
+        if (
+          item.status === "Perlu di verifikasi" ||
+          item.status === "Selesai dikerjakan ulang"
+        ) {
           return (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setSelectedReview(item)}
-            >
-              Review
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setSelectedReview(item)}
+              >
+                Review
+              </Button>
+              {/* Guru bisa langsung beri akses coba ulang setelah review */}
+              {onApproveRetry && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  startIcon={<RefreshCcw size={14} />}
+                  onClick={() => setSelectedRetry(item)}
+                >
+                  Beri Akses Coba Ulang
+                </Button>
+              )}
+            </div>
           );
         }
 
-        const detail = details.find((detail) => detail.id === item.id);
+        // ── Sedang dikerjakan ulang: hanya Lihat Detail ──
+        if (item.status === "Sedang dikerjakan ulang") {
+          return (
+            <div className="flex items-center gap-2">
+              {detail && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  startIcon={<Eye size={16} />}
+                  onClick={() => setSelectedDetail(detail)}
+                >
+                  Lihat Detail
+                </Button>
+              )}
+            </div>
+          );
+        }
 
+        // ── Selesai / Selesai Dikerjakan Ulang: hanya Lihat Detail ──
         return (
-          <Button
-            variant="outline"
-            size="sm"
-            startIcon={<Eye size={16} />}
-            onClick={() => setSelectedDetail(detail)}
-          >
-            Lihat Detail
-          </Button>
+          <div className="flex items-center gap-2">
+            {detail && (
+              <Button
+                variant="outline"
+                size="sm"
+                startIcon={<Eye size={16} />}
+                onClick={() => setSelectedDetail(detail)}
+              >
+                Lihat Detail
+              </Button>
+            )}
+          </div>
         );
       },
     },
@@ -198,18 +248,41 @@ export default function VerificationTable({
                   ? "Skor AI untuk asesmen ini berhasil diverifikasi dan disimpan."
                   : "Koreksi skor dan catatan untuk asesmen ini berhasil disimpan.",
             });
-          } catch (err: any) {
-            console.error("Failed to submit review:", err);
+          } catch (err: unknown) {
+            const message =
+              (
+                err as {
+                  response?: { data?: { message?: string } };
+                  message?: string;
+                }
+              )?.response?.data?.message ||
+              (err as { message?: string })?.message ||
+              "Terjadi kesalahan saat menyimpan verifikasi nilai.";
             setAlertModal({
               open: true,
               type: "error",
               title: "Verifikasi Nilai Gagal",
-              description:
-                err?.response?.data?.message ||
-                err?.message ||
-                "Terjadi kesalahan saat menyimpan verifikasi nilai.",
+              description: message,
             });
           }
+        }}
+      />
+
+      {/* Approve Retry */}
+      <RetryModal
+        open={Boolean(selectedRetry)}
+        data={selectedRetry}
+        onClose={() => setSelectedRetry(undefined)}
+        onConfirm={async (id, deadline) => {
+          if (!onApproveRetry) return;
+          await onApproveRetry(id, deadline);
+          setAlertModal({
+            open: true,
+            type: "success",
+            title: "Coba Ulang Disetujui",
+            description:
+              "Siswa kini dapat mengerjakan ulang studi kasus sesuai deadline yang ditetapkan.",
+          });
         }}
       />
 

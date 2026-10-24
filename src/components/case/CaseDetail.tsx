@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BrainCircuit, Lightbulb } from "lucide-react";
+import { BrainCircuit, CalendarClock, Lightbulb, Lock } from "lucide-react";
 
 import { CompetencyScore } from "@/types/asessment";
-import { CaseDetail as CaseDetailType, RunHistory } from "@/types/case";
+import { CaseDetail as CaseDetailType } from "@/types/case";
 import { QueueItem } from "@/types/queue";
 
 import CaseHeader from "./CaseHeader";
@@ -19,12 +19,11 @@ import Button from "../ui/Button";
 
 import caseService, { mapScoringToCompetencies } from "@/services/case.service";
 import { mapPythonError } from "@/utils/errorMapper";
-import { storage } from "@/utils/storage";
-
-
 
 interface Props {
   detail: CaseDetailType;
+  /** Opsional: callback untuk reload data dari parent (halaman siswa) setelah submit */
+  onReload?: () => void;
 }
 
 interface QuestionResult {
@@ -35,7 +34,7 @@ interface QuestionResult {
   competencies: CompetencyScore[];
 }
 
-export default function CaseDetail({ detail }: Props) {
+export default function CaseDetail({ detail, onReload }: Props) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -43,8 +42,6 @@ export default function CaseDetail({ detail }: Props) {
   const [questionResults, setQuestionResults] = useState<
     Record<string, QuestionResult>
   >({});
-
-  const [runHistory] = useState<RunHistory[]>([]);
 
   const [running, setRunning] = useState(false);
 
@@ -67,27 +64,12 @@ export default function CaseDetail({ detail }: Props) {
   const processingRef = useRef(false);
 
   useEffect(() => {
-    const user = storage.getUser();
-    const draftKey = `case_draft_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
-    let savedDrafts: {
-      answers?: Record<string, string>;
-      currentQuestion?: number;
-    } = {};
-
-    try {
-      const raw = localStorage.getItem(draftKey);
-      if (raw) savedDrafts = JSON.parse(raw);
-    } catch {
-      // ignore
-    }
-
+    // Inisialisasi jawaban dan hasil dari data API (question.submission)
     const initialAnswers: Record<string, string> = {};
     const initialResults: Record<string, QuestionResult> = {};
     const hasWorkedBefore = detail.questions.some(
-      (question) => question.hasSubmitted || question.submission,
+      (q) => q.hasSubmitted || q.submission,
     );
-    const introKey = `case_start_info_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
-    const hasAcceptedIntro = localStorage.getItem(introKey) === "true";
 
     detail.questions.forEach((q) => {
       if (q.hasSubmitted && q.submission) {
@@ -101,8 +83,6 @@ export default function CaseDetail({ detail }: Props) {
             ? mapScoringToCompetencies(q.submission.aiScore)
             : [],
         };
-      } else if (savedDrafts.answers?.[q.id] !== undefined) {
-        initialAnswers[q.id] = savedDrafts.answers[q.id];
       } else {
         initialAnswers[q.id] = q.starterCode;
       }
@@ -110,53 +90,41 @@ export default function CaseDetail({ detail }: Props) {
 
     setAnswers(initialAnswers);
     setQuestionResults(initialResults);
-
-    if (
-      typeof savedDrafts.currentQuestion === "number" &&
-      savedDrafts.currentQuestion >= 0 &&
-      savedDrafts.currentQuestion < detail.questions.length
-    ) {
-      setCurrentQuestion(savedDrafts.currentQuestion);
-    } else {
-      setCurrentQuestion(0);
-    }
-
+    setCurrentQuestion(0);
     setFailedRunCount(0);
     setOpenedHints([]);
     setShowSubmitModal(false);
-    setShowStartInfoModal(!hasWorkedBefore && !hasAcceptedIntro);
+    setShowStartInfoModal(!hasWorkedBefore);
     setSubmissionQueue([]);
-    setAlert({
-      open: false,
-      title: "",
-      description: "",
-    });
+    setAlert({ open: false, title: "", description: "" });
   }, [detail]);
 
-  // Save active progress to localStorage so refreshing does not lose work
-  useEffect(() => {
-    if (!detail?.id || Object.keys(answers).length === 0) return;
-    const user = storage.getUser();
-    const draftKey = `case_draft_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
-    try {
-      localStorage.setItem(
-        draftKey,
-        JSON.stringify({
-          answers,
-          currentQuestion,
-        }),
-      );
-    } catch {
-      // ignore
-    }
-  }, [answers, currentQuestion, detail?.id]);
-
-
   const question = detail.questions[currentQuestion];
-
   const total = detail.questions.length;
-
   const currentResult = questionResults[question.id];
+
+  // ===== Retry access dari API — sumber kebenaran tunggal =====
+  // allowRetry dan retryDeadline berasal langsung dari response API per soal.
+  const apiAllowRetry = question.allowRetry === true;
+  const apiRetryDeadline = question.retryDeadline ?? null;
+
+  // Deadline sudah lewat?
+  const isDeadlineExpired = useMemo(() => {
+    if (!apiRetryDeadline) return false;
+    return new Date(apiRetryDeadline) < new Date();
+  }, [apiRetryDeadline]);
+
+  // ===== Menentukan apakah editor terkunci =====
+  // Editor terkunci jika:
+  //   - Soal sudah disubmit (hasSubmitted/currentResult.submitted) DAN
+  //   - Guru belum memberikan akses retry (allowRetry=false) ATAU deadline sudah lewat
+  const isEditorLocked = useMemo(() => {
+    const submitted = Boolean(currentResult?.submitted || question.hasSubmitted);
+    if (!submitted) return false;
+    // Jika guru sudah beri akses dan deadline masih berlaku → buka kunci
+    if (apiAllowRetry && !isDeadlineExpired) return false;
+    return true;
+  }, [currentResult, question.hasSubmitted, apiAllowRetry, isDeadlineExpired]);
 
   const submittedQuestions = useMemo(() => {
     const resultIds = Object.keys(questionResults).filter(
@@ -168,7 +136,6 @@ export default function CaseDetail({ detail }: Props) {
     return [...new Set([...resultIds, ...queuedIds])];
   }, [questionResults, submissionQueue]);
 
-  // Check if current question is already submitted (either has result or is in queue)
   const isCurrentQueued = useMemo(
     () =>
       submissionQueue.some(
@@ -179,13 +146,11 @@ export default function CaseDetail({ detail }: Props) {
     [submissionQueue, question.id],
   );
 
-  // Check if there's a running submission (for submit button label)
   const hasRunningSubmission = useMemo(
     () => submissionQueue.some((item) => item.status === "running"),
     [submissionQueue],
   );
 
-  // Get queue position for the current question (0 if not in queue)
   const currentQueuePosition = useMemo(() => {
     const queuedItems = submissionQueue.filter((i) => i.status === "queued");
     const idx = queuedItems.findIndex((i) => i.questionId === question.id);
@@ -216,13 +181,11 @@ export default function CaseDetail({ detail }: Props) {
 
       if (result.stderr) {
         const error = mapPythonError(result.stderr);
-
         setAlert({
           open: true,
           title: error.title,
           description: error.description,
         });
-
         setFailedRunCount((prev) => Math.min(prev + 1, question.hints.length));
       }
 
@@ -259,11 +222,9 @@ export default function CaseDetail({ detail }: Props) {
     });
   }, []);
 
-  // Effect to process the running item — only fires when currentRunningIdRef changes
   useEffect(() => {
     const runningItem = submissionQueue.find((i) => i.status === "running");
 
-    // Only process if there's a running item and it matches our tracked ID
     if (
       !runningItem ||
       !processingRef.current ||
@@ -272,8 +233,6 @@ export default function CaseDetail({ detail }: Props) {
       return;
     }
 
-    // Prevent re-processing: clear the ref immediately so subsequent
-    // renders of this effect won't re-trigger for the same item
     const itemToProcess = runningItem;
     const itemId = currentRunningIdRef.current;
     currentRunningIdRef.current = null;
@@ -296,13 +255,11 @@ export default function CaseDetail({ detail }: Props) {
           competencies,
         };
 
-        // Store result in questionResults
         setQuestionResults((prev) => ({
           ...prev,
           [itemToProcess.questionId]: result,
         }));
 
-        // Mark queue item as completed
         setSubmissionQueue((prev) =>
           prev.map((item) =>
             item.id === itemId
@@ -315,10 +272,12 @@ export default function CaseDetail({ detail }: Props) {
               : item,
           ),
         );
+
+        // Reload data detail dari API agar allowRetry/retryDeadline dan status ter-update
+        onReload?.();
       } catch {
         if (cancelled) return;
 
-        // Mark queue item as failed
         setSubmissionQueue((prev) =>
           prev.map((item) =>
             item.id === itemId
@@ -342,9 +301,8 @@ export default function CaseDetail({ detail }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [submissionQueue]);
+  }, [submissionQueue, onReload]);
 
-  // When a submission finishes, check if there's more to process
   useEffect(() => {
     if (!processingRef.current) {
       const hasQueued = submissionQueue.some((i) => i.status === "queued");
@@ -355,9 +313,31 @@ export default function CaseDetail({ detail }: Props) {
     }
   }, [submissionQueue, processNextInQueue]);
 
-  // ===== Submit Handler (now queues instead of blocking) =====
+  // ===== Submit Handler =====
   const handleSubmit = () => {
     setShowSubmitModal(false);
+
+    // Guard: editor harus terbuka (tidak terkunci)
+    if (isEditorLocked) {
+      setAlert({
+        open: true,
+        title: "Tidak Dapat Submit",
+        description: "Editor terkunci. Menunggu guru memberikan akses coba ulang.",
+      });
+      return;
+    }
+
+    // Guard: cek deadline coba ulang
+    if (apiAllowRetry && isDeadlineExpired) {
+      setAlert({
+        open: true,
+        title: "Deadline Coba Ulang Telah Habis",
+        description: apiRetryDeadline
+          ? `Batas waktu coba ulang adalah ${new Date(apiRetryDeadline).toLocaleString("id-ID")}. Kamu tidak dapat submit lagi untuk soal ini.`
+          : "Batas waktu pengerjaan ulang telah habis.",
+      });
+      return;
+    }
 
     const newItem: QueueItem = {
       id: crypto.randomUUID(),
@@ -388,24 +368,64 @@ export default function CaseDetail({ detail }: Props) {
 
   const handleUseHint = () => {
     const nextHint = openedHints.length;
-
     if (nextHint >= question.hints.length) return;
-
     setOpenedHints((prev) => [...prev, nextHint]);
   };
 
   const handleAcceptStartInfo = () => {
-    const user = storage.getUser();
-    const introKey = `case_start_info_${detail.id}_${user?.id ?? user?.name ?? "guest"}`;
-
-    localStorage.setItem(introKey, "true");
     setShowStartInfoModal(false);
+  };
+
+  // ===== Deadline banner helper =====
+  const formatDeadline = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+    } catch {
+      return iso;
+    }
   };
 
   return (
     <>
       <div className="space-y-8">
         <CaseHeader title={detail.title} />
+
+        {/* ===== RETRY DEADLINE BANNER ===== */}
+        {/* Ditampilkan hanya jika guru sudah berikan akses coba ulang */}
+        {apiAllowRetry && apiRetryDeadline && (
+          <div
+            className={`flex items-start gap-3 rounded-xl border px-5 py-4 ${
+              isDeadlineExpired
+                ? "border-danger/30 bg-danger/5"
+                : "border-warning/30 bg-warning/5"
+            }`}
+          >
+            {isDeadlineExpired ? (
+              <Lock size={18} className="mt-0.5 shrink-0 text-danger" />
+            ) : (
+              <CalendarClock size={18} className="mt-0.5 shrink-0 text-warning" />
+            )}
+            <div>
+              <p className={`text-sm font-semibold ${isDeadlineExpired ? "text-danger" : "text-warning"}`}>
+                {isDeadlineExpired
+                  ? "Waktu Coba Ulang Telah Habis"
+                  : "Akses Coba Ulang Diberikan"}
+              </p>
+              <p className="mt-0.5 text-xs text-description">
+                {isDeadlineExpired
+                  ? `Deadline ${formatDeadline(apiRetryDeadline)} sudah terlewati. Kamu tidak dapat submit lagi untuk soal ini.`
+                  : `Deadline pengerjaan ulang: ${formatDeadline(apiRetryDeadline)}`}
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)_320px]">
           <LeftPanel
@@ -419,17 +439,25 @@ export default function CaseDetail({ detail }: Props) {
 
           <CodeEditor
             code={answers[question.id] ?? ""}
-            disabled={isCurrentQueued}
-            isSubmitted={Boolean(currentResult?.submitted)}
+            disabled={isCurrentQueued || isEditorLocked}
+            isSubmitted={isEditorLocked}
             running={running}
             isAssessing={isCurrentQueued}
             hasQueuedSubmission={hasRunningSubmission}
             queuePosition={currentQueuePosition}
+            retryStatus={
+              isEditorLocked && !apiAllowRetry
+                ? "none"
+                : isEditorLocked && isDeadlineExpired
+                  ? "none"
+                  : apiAllowRetry && !isDeadlineExpired
+                    ? "approved"
+                    : "none"
+            }
             onCodeChange={handleCodeChange}
             onRun={handleRun}
             onSubmit={() => setShowSubmitModal(true)}
           />
-
 
           <RightPanel
             hints={question.hints}
@@ -446,13 +474,27 @@ export default function CaseDetail({ detail }: Props) {
 
       <ConfirmModal
         open={showSubmitModal}
-        title={currentResult?.submitted ? "Submit Ulang Jawaban?" : "Submit Jawaban?"}
-        description={
-          currentResult?.submitted
-            ? "Kode kamu akan dinilai kembali oleh AI. Proses ini bisa membutuhkan waktu beberapa menit. Nilai terbaru akan disimpan ke sistem."
-            : "Kode kamu akan dinilai oleh AI. Proses ini bisa membutuhkan waktu beberapa menit."
+        title={
+          apiAllowRetry && !isDeadlineExpired
+            ? "Submit Pengerjaan Ulang?"
+            : currentResult?.submitted
+              ? "Submit Ulang Jawaban?"
+              : "Submit Jawaban?"
         }
-        confirmText={currentResult?.submitted ? "Submit Ulang & Nilai" : "Submit & Nilai"}
+        description={
+          apiAllowRetry && !isDeadlineExpired
+            ? "Kode kamu akan dinilai kembali oleh AI sebagai hasil pengerjaan ulang."
+            : currentResult?.submitted
+              ? "Kode kamu akan dinilai kembali oleh AI. Proses ini bisa membutuhkan waktu beberapa menit. Nilai terbaru akan disimpan ke sistem."
+              : "Kode kamu akan dinilai oleh AI. Proses ini bisa membutuhkan waktu beberapa menit."
+        }
+        confirmText={
+          apiAllowRetry && !isDeadlineExpired
+            ? "Submit Ulang"
+            : currentResult?.submitted
+              ? "Submit Ulang & Nilai"
+              : "Submit & Nilai"
+        }
         cancelText="Batal"
         loading={false}
         onClose={() => setShowSubmitModal(false)}
@@ -490,7 +532,7 @@ export default function CaseDetail({ detail }: Props) {
 
                 <p className="mt-1 text-sm">
                   Hint akan keluar saat kamu melakukan kesalahan
-                  penulisan pada codingan. Penggunaan hint akan 
+                  penulisan pada codingan. Penggunaan hint akan
                   tercatat dalam penilaian.
                 </p>
 

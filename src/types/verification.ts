@@ -1,4 +1,8 @@
-export type VerificationStatus = "Perlu Verifikasi" | "Selesai";
+export type VerificationStatus =
+  | "Perlu di verifikasi"
+  | "Selesai dikerjakan ulang"
+  | "Sedang dikerjakan ulang"
+  | "Sudah di Verifikasi";
 
 export interface VerificationDimension {
   name: string;
@@ -34,6 +38,12 @@ export interface VerificationItem {
   createdAt?: string;
 
   dimensions: VerificationDimension[];
+
+  /** Apakah siswa diizinkan coba ulang */
+  allowRetry?: boolean;
+
+  /** Deadline coba ulang dalam ISO string */
+  retryDeadline?: string | null;
 }
 
 export interface VerificationDetail extends VerificationItem {
