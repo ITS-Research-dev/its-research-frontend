@@ -11,6 +11,7 @@ export default function TeacherVerificationPage() {
     verifications,
     loading,
     submitReview,
+    approveRetry,
     totalSubmitted,
     totalPending,
     totalReviewed,
@@ -54,6 +55,7 @@ export default function TeacherVerificationPage() {
           data={verifications}
           details={verifications}
           onReviewSubmit={submitReview}
+          onApproveRetry={approveRetry}
         />
       </section>
     </div>

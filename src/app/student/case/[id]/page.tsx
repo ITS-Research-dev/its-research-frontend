@@ -10,7 +10,7 @@ import { useCaseDetail } from "@/hooks/useCase";
 
 export default function CaseDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { detail, loading } = useCaseDetail(id);
+  const { detail, loading, reload } = useCaseDetail(id);
 
   if (loading) {
     return (
@@ -39,5 +39,5 @@ export default function CaseDetailPage() {
     );
   }
 
-  return <CaseDetail detail={detail} />;
+  return <CaseDetail detail={detail} onReload={reload} />;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -30,6 +30,12 @@ interface Props {
 
   /** Position in queue for the current question (0 = not queued) */
   queuePosition?: number;
+
+  /**
+   * 'approved' = guru sudah beri akses coba ulang, editor bisa diedit & submit aktif.
+   * 'none'     = belum ada akses / sudah expired.
+   */
+  retryStatus?: "none" | "approved";
 
   onCodeChange: (value: string) => void;
 
@@ -146,6 +152,7 @@ export default function CodeEditor({
   isAssessing = false,
   hasQueuedSubmission = false,
   queuePosition = 0,
+  retryStatus = "none",
   onCodeChange,
   onRun,
   onSubmit,
@@ -224,7 +231,7 @@ export default function CodeEditor({
       if (e.ctrlKey && e.key.toLowerCase() === "s") {
         e.preventDefault();
 
-        if (!disabled) {
+        if (!disabled && !isSubmitted) {
           onSubmit();
         }
       }
@@ -235,7 +242,7 @@ export default function CodeEditor({
     return () => {
       window.removeEventListener("keydown", handler);
     };
-  }, [disabled, running, code]);
+  }, [disabled, running, code, isSubmitted]);
 
   // Determine submit button text
   const getSubmitLabel = () => {
@@ -295,19 +302,30 @@ export default function CodeEditor({
           </span>
         )}
 
-        <Button
-          variant="secondary"
-          loading={running}
-          disabled={disabled || isAssessing}
-          onClick={handleRun}
-        >
-          Uji Coba
-        </Button>
+        {/* Jika editor terkunci (submitted dan belum ada akses retry): tampilkan info kunci */}
+        {isSubmitted && retryStatus !== "approved" ? (
+          <span className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-xs font-semibold text-description">
+            <Lock size={14} />
+            Jawaban terkunci — menunggu guru
+          </span>
+        ) : (
+          <>
+            <Button
+              variant="secondary"
+              loading={running}
+              disabled={disabled || isAssessing}
+              onClick={handleRun}
+            >
+              Uji Coba
+            </Button>
 
-        <Button disabled={disabled || isAssessing} onClick={onSubmit}>
-          {getSubmitLabel()}
-        </Button>
+            <Button disabled={disabled || isAssessing} onClick={onSubmit}>
+              {getSubmitLabel()}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
 }
+

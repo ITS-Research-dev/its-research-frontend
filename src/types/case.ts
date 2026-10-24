@@ -8,13 +8,24 @@ export interface Case {
   title: string;
 }
 
+export interface CaseProgress {
+  maxCount: number;
+  /** API returns camelCase 'progressCount' */
+  progressCount: number;
+}
+
 export interface CaseItem extends Case {
   id: string;
   totalTest: number;
   submittedCount?: number;
   progressMessage?: string;
+  /** API field – bisa 'startDate' atau 'startoate' (typo backend) */
   startDate: string;
+  startoate?: string;
+  /** Array progress dari API */
+  progresses?: CaseProgress[];
 }
+
 
 export interface CaseCardData {
   id: string;
@@ -49,6 +60,10 @@ export interface CaseQuestion {
   starterCode: string;
   hints: string[];
   hasSubmitted?: boolean;
+  /** Apakah guru sudah memberikan akses coba ulang */
+  allowRetry?: boolean;
+  /** Deadline coba ulang dalam ISO string dari API */
+  retryDeadline?: string | null;
   submission?: CaseQuestionSubmission | null;
 }
 
@@ -61,6 +76,8 @@ export interface CaseDetail extends Case {
   topic: string;
   description: string;
   status: CaseStatus;
+  /** Progress summary dari getCaseDetail — {completed, total, percentage} */
+  progress?: { completed: number; total: number; percentage: number };
   questions: CaseQuestion[];
 }
 
