@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 
 import Button from "@/components/ui/Button";
 import { CaseQuestion } from "@/types/case";
@@ -39,7 +39,8 @@ export default function QuestionNavigation({
             submittedQuestions.includes(`q${index + 1}`) ||
             submittedQuestions.includes(String(index + 1));
 
-          return (
+          const retry = ((qId && questions?.[index]) && questions[index].allowRetry)
+            return (
             <Button
               key={qId || index}
               onClick={() => onChange(index)}
@@ -53,6 +54,14 @@ export default function QuestionNavigation({
                   <Check size={11} strokeWidth={3.5} />
                 </span>
               )}
+
+              {retry && (
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-yellow-600 text-white ring-2 ring-white shadow-xs">
+                  <Clock size={11} strokeWidth={3.5} />
+                </span>
+              )}
+
+
             </Button>
           );
         })}
